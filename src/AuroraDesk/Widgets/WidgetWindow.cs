@@ -56,6 +56,7 @@ internal sealed class WidgetWindow : Window
         base.OnSourceInitialized(e);
         _hwnd = new WindowInteropHelper(this).Handle;
         HwndSource.FromHwnd(_hwnd)?.AddHook(WndProc);
+        Infrastructure.RenderModes.Apply(this);
         ApplyStyles();
         RestorePosition();
         ApplyLayer();

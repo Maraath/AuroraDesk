@@ -8,6 +8,7 @@ using AuroraDesk.Core.Measures;
 using AuroraDesk.Core.Scheduling;
 using AuroraDesk.Core.Skins;
 using AuroraDesk.Core.Theming;
+using AuroraDesk.Dock;
 using AuroraDesk.Infrastructure;
 using AuroraDesk.Interop;
 using AuroraDesk.Theming;
@@ -35,7 +36,8 @@ internal sealed class AppHost : IDisposable
         Config = ConfigStore.Load();
         Strings.Language = Strings.Parse(Config.Language);
 
-        // Precisa vir antes de criar qualquer janela. Ver PerformanceConfig.HardwareRendering.
+        // Precisa vir antes de criar qualquer janela. Ver PerformanceConfig.HardwareRendering e RenderModes.
+        RenderModes.HardwareEverywhere = Config.Performance.HardwareRendering;
         if (!Config.Performance.HardwareRendering)
             System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
 
@@ -45,7 +47,10 @@ internal sealed class AppHost : IDisposable
         Tray = new TrayIcon(Control, "Aurora Desk");
         Themes = new ThemeService(Config, new ThemeStore(Paths.Themes), new FontService(Paths.Fonts));
         Widgets = new WidgetManager(this);
+        Dock = new DockManager(this);
     }
+
+    public DockManager Dock { get; }
 
     public Dispatcher Dispatcher { get; }
     public AppPaths Paths { get; }
@@ -75,6 +80,7 @@ internal sealed class AppHost : IDisposable
         _fontWatcher.Changed += _ => Themes.ReloadFonts();
 
         Widgets.Start();
+        Dock.Start();
 
         var startedAt = Process.GetCurrentProcess().StartTime;
         // Medido quando a fila de interface esvazia, isto é, com tudo já visível.
@@ -140,6 +146,8 @@ internal sealed class AppHost : IDisposable
             .Submenu("Tema", themeMenu)
             .Submenu("Widgets", widgetMenu)
             .Item(Config.WidgetsVisible ? "Ocultar widgets" : "Mostrar widgets", () => Widgets.SetVisible(!Config.WidgetsVisible))
+            .Submenu("Dock", Dock.SettingsMenu())
+            .Item(Config.Dock.Enabled ? "Ocultar dock" : "Mostrar dock", () => Dock.SetEnabled(!Config.Dock.Enabled))
             .Separator()
             .Item("Configurações", OpenSettings)
             .Item("Abrir pasta de dados", () => OpenFolder(Paths.Roaming))
@@ -168,9 +176,30 @@ internal sealed class AppHost : IDisposable
 
     public void Exit() => _app.Shutdown();
 
+    /// <summary>
+    /// Aplica uma mudança que exige reiniciar (ex.: Mica/Acrílico troca o modo de renderização),
+    /// grava a configuração e reabre o app.
+    /// </summary>
+    public void RequestRestartFor(Action change)
+    {
+        change();
+        SaveConfig();
+        try
+        {
+            Process.Start(new ProcessStartInfo(Environment.ProcessPath!, $"--reiniciar {Environment.ProcessId}") { UseShellExecute = false });
+            Log.Info("Reiniciando para aplicar a mudança");
+            Exit();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Não foi possível reiniciar; a mudança vale na próxima abertura", ex);
+        }
+    }
+
     public void Dispose()
     {
         SaveConfig();
+        Dock.Dispose();
         Widgets.Dispose();
         _themeWatcher?.Dispose();
         _fontWatcher?.Dispose();

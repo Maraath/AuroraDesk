@@ -13,6 +13,14 @@ internal static class Program
     {
         bool exit = args.Any(a => a.Equals("--sair", StringComparison.OrdinalIgnoreCase));
 
+        // --reiniciar <pid>: espera a instância anterior fechar antes de tentar a instância única.
+        int restart = Array.FindIndex(args, a => a.Equals("--reiniciar", StringComparison.OrdinalIgnoreCase));
+        if (restart >= 0 && restart + 1 < args.Length && int.TryParse(args[restart + 1], out int pid))
+        {
+            try { System.Diagnostics.Process.GetProcessById(pid).WaitForExit(10_000); }
+            catch (ArgumentException) { } // já fechou
+        }
+
         using var mutex = new Mutex(true, @"Local\AuroraDesk.Instancia", out bool created);
         if (!created)
         {

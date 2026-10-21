@@ -45,6 +45,8 @@ public sealed class WidgetInstance
 public sealed class DockConfig
 {
     public bool Enabled { get; set; } = true;
+    /// <summary>Itens padrão já foram criados (primeiro uso).</summary>
+    public bool Initialized { get; set; }
     /// <summary>"inferior", "superior", "esquerda" ou "direita".</summary>
     public string Edge { get; set; } = "inferior";
     /// <summary>true = reserva espaço na tela (AppBar); false = flutuante.</summary>
@@ -55,7 +57,7 @@ public sealed class DockConfig
     public int Spacing { get; set; } = 6;
     public bool Zoom { get; set; } = true;
     public double ZoomFactor { get; set; } = 1.4;
-    public bool ShowLabels { get; set; }
+    public bool ShowLabels { get; set; } = true;
     public bool ShowRunning { get; set; } = true;
     /// <summary>"nenhum", "acrilico" ou "mica".</summary>
     public string Backdrop { get; set; } = "nenhum";

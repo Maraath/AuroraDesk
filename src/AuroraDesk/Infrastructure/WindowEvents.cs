@@ -31,13 +31,18 @@ internal static unsafe class WindowEvents
         Start();
         if (_lifecycleHook != 0) return;
         _lifecycleHook = Win32.SetWinEventHook(Win32.EVENT_OBJECT_DESTROY, Win32.EVENT_OBJECT_HIDE, 0, &Callback, 0, 0, Win32.WINEVENT_OUTOFCONTEXT | Win32.WINEVENT_SKIPOWNPROCESS);
+        // Janelas UWP e de outras áreas de trabalho virtuais são "cloaked" em vez de ocultas.
+        _cloakHook = Win32.SetWinEventHook(EVENT_OBJECT_CLOAKED, EVENT_OBJECT_UNCLOAKED, 0, &Callback, 0, 0, Win32.WINEVENT_OUTOFCONTEXT | Win32.WINEVENT_SKIPOWNPROCESS);
     }
+
+    private const uint EVENT_OBJECT_CLOAKED = 0x8017, EVENT_OBJECT_UNCLOAKED = 0x8018;
+    private static nint _cloakHook;
 
     public static void Stop()
     {
-        foreach (var h in new[] { _foregroundHook, _lifecycleHook, _minimizeHook })
+        foreach (var h in new[] { _foregroundHook, _lifecycleHook, _minimizeHook, _cloakHook })
             if (h != 0) Win32.UnhookWinEvent(h);
-        _foregroundHook = _lifecycleHook = _minimizeHook = 0;
+        _foregroundHook = _lifecycleHook = _minimizeHook = _cloakHook = 0;
     }
 
     [System.Runtime.InteropServices.UnmanagedCallersOnly]
