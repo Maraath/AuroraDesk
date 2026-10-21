@@ -6,7 +6,10 @@ using AuroraDesk.Core.Formatting;
 using AuroraDesk.Core.Logging;
 using AuroraDesk.Core.Measures;
 using AuroraDesk.Core.Scheduling;
+using AuroraDesk.Core.Theming;
+using AuroraDesk.Infrastructure;
 using AuroraDesk.Interop;
+using AuroraDesk.Theming;
 using AuroraDesk.Tray;
 
 namespace AuroraDesk;
@@ -38,7 +41,11 @@ internal sealed class AppHost : IDisposable
             action => _dispatcher.BeginInvoke(DispatcherPriority.Background, action));
         Control = new ControlWindow();
         Tray = new TrayIcon(Control, "Aurora Desk");
+        Themes = new ThemeService(Config, new ThemeStore(Paths.Themes), new FontService(Paths.Fonts));
     }
+
+    public ThemeService Themes { get; }
+    private DebouncedWatcher? _themeWatcher, _fontWatcher;
 
     public AppPaths Paths { get; }
     public ConfigStore ConfigStore { get; }
@@ -54,6 +61,12 @@ internal sealed class AppHost : IDisposable
         Tray.Activated += OpenSettings;
         Tray.Show();
 
+        // Temas e fontes recarregam sozinhos ao salvar arquivos nas pastas do usuário.
+        _themeWatcher = new DebouncedWatcher(Paths.Themes, "*.json", false, _dispatcher);
+        _themeWatcher.Changed += _ => Themes.ReloadFiles();
+        _fontWatcher = new DebouncedWatcher(Paths.Fonts, "*.*", false, _dispatcher, delayMs: 800);
+        _fontWatcher.Changed += _ => Themes.ReloadFonts();
+
         var startedAt = Process.GetCurrentProcess().StartTime;
         // Medido quando a fila de interface esvazia, isto é, com tudo já visível.
         _dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
@@ -64,6 +77,12 @@ internal sealed class AppHost : IDisposable
 
     private bool OnControlMessage(int msg, nint wParam, nint lParam)
     {
+        if (msg == Win32.WM_DWMCOLORIZATIONCOLORCHANGED ||
+            (msg == Win32.WM_SETTINGCHANGE && lParam != 0 && System.Runtime.InteropServices.Marshal.PtrToStringUni(lParam) == "ImmersiveColorSet"))
+        {
+            if (Config.FollowWindowsTheme || Config.FollowWindowsAccent) Themes.Refresh();
+            return false;
+        }
         if (msg != ControlWindow.CommandMessage) return false;
         switch ((int)wParam)
         {
@@ -75,12 +94,36 @@ internal sealed class AppHost : IDisposable
 
     private void ShowTrayMenu()
     {
+        var themeMenu = new NativeMenu();
+        foreach (var theme in Themes.Store.All)
+        {
+            string name = theme.Name;
+            themeMenu.Item(name, () => { Themes.Select(name); SaveConfig(); },
+                isChecked: !Config.FollowWindowsTheme && Themes.Current.Name == name);
+        }
+        themeMenu.Separator()
+            .Item("Seguir o modo claro/escuro do Windows", () =>
+            {
+                Config.FollowWindowsTheme = !Config.FollowWindowsTheme;
+                Themes.Refresh(force: true);
+                SaveConfig();
+            }, isChecked: Config.FollowWindowsTheme)
+            .Item("Usar a cor de destaque do Windows", () =>
+            {
+                Config.FollowWindowsAccent = !Config.FollowWindowsAccent;
+                Themes.Refresh(force: true);
+                SaveConfig();
+            }, isChecked: Config.FollowWindowsAccent)
+            .Item("Abrir pasta de temas", () => OpenFolder(Paths.Themes));
+
         var menu = new NativeMenu()
+            .Submenu("Tema", themeMenu)
+            .Separator()
             .Item("Configurações", OpenSettings)
             .Item("Abrir pasta de dados", () => OpenFolder(Paths.Roaming))
             .Separator()
             .Item("Sair", Exit);
-        menu.Show(Control.Handle, dark: true);
+        menu.Show(Control.Handle, dark: Themes.Current.Dark);
     }
 
     public void OpenSettings()
@@ -110,6 +153,8 @@ internal sealed class AppHost : IDisposable
 
     public void Dispose()
     {
+        _themeWatcher?.Dispose();
+        _fontWatcher?.Dispose();
         Scheduler.Dispose();
         Tray.Dispose();
         Control.Dispose();

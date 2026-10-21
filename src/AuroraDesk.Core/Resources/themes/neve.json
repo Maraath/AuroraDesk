@@ -1,0 +1,20 @@
+{
+  // Neve: claro, limpo, destaque azul.
+  "nome": "Neve",
+  "escuro": false,
+  "raio": 14,
+  "opacidade": 0.88,
+  "fonte": "Segoe UI Variable Text",
+  "tamanhoFonte": 13,
+  "cores": {
+    "fundo": "#F7F8FA",
+    "superficie": "#E6E9EE",
+    "texto": "#1F2328",
+    "textoSecundario": "#5F6670",
+    "destaque": "#2F6FEB",
+    "borda": "#D2D7DE",
+    "sucesso": "#1F9D60",
+    "alerta": "#B7791F",
+    "perigo": "#D93C3C"
+  }
+}

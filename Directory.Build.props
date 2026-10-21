@@ -12,6 +12,8 @@
 
     <!-- Leveza do runtime -->
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- O WPF cria culturas como "en-US" internamente; no modo invariante isso não pode lançar exceção. -->
+    <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <SatelliteResourceLanguages>pt-BR</SatelliteResourceLanguages>
     <ServerGarbageCollector>false</ServerGarbageCollector>

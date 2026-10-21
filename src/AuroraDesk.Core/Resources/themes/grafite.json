@@ -1,0 +1,20 @@
+{
+  // Grafite: escuro elegante, destaque azul suave.
+  "nome": "Grafite",
+  "escuro": true,
+  "raio": 14,
+  "opacidade": 0.84,
+  "fonte": "Segoe UI Variable Text",
+  "tamanhoFonte": 13,
+  "cores": {
+    "fundo": "#1B1D22",
+    "superficie": "#2A2E36",
+    "texto": "#E8EAED",
+    "textoSecundario": "#9AA0A6",
+    "destaque": "#7AA2F7",
+    "borda": "#3A3F47",
+    "sucesso": "#7DD3A8",
+    "alerta": "#F5C26B",
+    "perigo": "#F28B82"
+  }
+}

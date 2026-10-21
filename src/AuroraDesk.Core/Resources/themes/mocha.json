@@ -1,0 +1,20 @@
+{
+  // Mocha: pastel escuro, destaque lilás.
+  "nome": "Mocha",
+  "escuro": true,
+  "raio": 16,
+  "opacidade": 0.86,
+  "fonte": "Segoe UI Variable Text",
+  "tamanhoFonte": 13,
+  "cores": {
+    "fundo": "#1E1E2E",
+    "superficie": "#313244",
+    "texto": "#CDD6F4",
+    "textoSecundario": "#A6ADC8",
+    "destaque": "#CBA6F7",
+    "borda": "#45475A",
+    "sucesso": "#A6E3A1",
+    "alerta": "#F9E2AF",
+    "perigo": "#F38BA8"
+  }
+}

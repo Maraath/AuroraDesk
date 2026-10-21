@@ -9,8 +9,13 @@ public sealed class AppConfig
     public int Version { get; set; } = 1;
     public string Language { get; set; } = "pt-BR";
     public string Theme { get; set; } = "Grafite";
+    /// <summary>Segue o modo claro/escuro do Windows, alternando entre <see cref="DarkTheme"/> e <see cref="LightTheme"/>.</summary>
     public bool FollowWindowsTheme { get; set; }
+    public string DarkTheme { get; set; } = "Grafite";
+    public string LightTheme { get; set; } = "Neve";
     public bool FollowWindowsAccent { get; set; }
+    /// <summary>Fonte global que substitui a do tema (vazio = usar a do tema).</summary>
+    public string? FontOverride { get; set; }
     public bool WidgetsVisible { get; set; } = true;
     public bool FirstRunDone { get; set; }
     public List<WidgetInstance> Widgets { get; set; } = [];
