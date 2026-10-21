@@ -40,11 +40,16 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
 - Configurações: as 6 páginas abrem; ao fechar, a memória é liberada.
 - "Iniciar com o Windows" grava a chave Run e "Restaurar original" a remove e apaga o backup.
 - O app fecha com `--sair` e tem uma instância só.
+- **Reinício do Explorer e Win+D** (`tools\teste-area-de-trabalho.ps1`, com veredito pela ordem Z em `tools\ordem-z.ps1`). Passos: início → Win+D → Win+D de volta → `explorer.exe` encerrado e reaberto → Win+D → Win+D de volta.
+  - Nos 7 passos, os widgets ficam logo acima do desktop e abaixo das janelas.
+  - O app sobrevive ao reinício do Explorer e recria o ícone da bandeja.
+  - O dock continua acima da nova barra de tarefas.
+  - O teste encontrou **dois defeitos**, já corrigidos:
+    1. No Win+D, o Explorer ativa o desktop antes de trazê-lo para a frente, e os widgets ficavam atrás. Correção: os widgets são reposicionados mais algumas vezes logo depois.
+    2. Se o desktop já estava em primeiro plano (depois de um clique nele ou de reiniciar o Explorer), o Win+D não gera evento de foco. Correção: enquanto o desktop estiver em primeiro plano, e só nesse período, a ordem Z é conferida a cada 400 ms.
 
 Não verificado (ou verificado só parcialmente):
 
-- Reinício do Explorer com widgets na área de trabalho. O código reaplica as camadas em `TaskbarCreated` e não depende do WorkerW, mas o Explorer não foi reiniciado de propósito.
-- Win+D ("Mostrar área de trabalho"): a âncora muda para a janela ativada, mas o teste não foi feito.
 - Pausa ao bloquear a tela, monitor desligado e tela cheia: os gatilhos estão implementados com as notificações oficiais, mas não foram disparados manualmente.
 - Arrastar arquivos para o dock, reordenar arrastando e os menus de contexto dos widgets e do dock: precisam de interação com o mouse real e não foram exercitados.
 - Importação de um skin do Rainmeter pela interface: o conversor está coberto por testes, mas o botão não foi clicado de ponta a ponta.
@@ -62,3 +67,4 @@ Não verificado (ou verificado só parcialmente):
 | 2026-10-21 16:03 | M4 - dock + 4 widgets | 62,1 | 101,5 | 23,0 | 0,10 | 0,65 | 507 | 20 | 812 |
 | 2026-10-21 16:17 | M5 - dock + 4 widgets + configurações (fechada) | 62,1 | 25,2 | 8,1 | 0,05 | 0,65 | 506 | 19 | 725 |
 | 2026-10-21 16:23 | M6 - final: dock + 4 widgets, TieredCompilation off | 60,2 | 16,5 | 6,4 | 0,03 | 0,26 | 497 | 17 | 804 |
+| 2026-10-21 16:49 | Correção Win+D (vigia do desktop) | 59,3 | 20,7 | 7,3 | 0,06 | 0,65 | 502 | 18 | 722 |

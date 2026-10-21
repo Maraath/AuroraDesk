@@ -67,6 +67,7 @@ internal sealed unsafe class TrayIcon : IDisposable
         {
             // Explorer reiniciou: o ícone precisa ser recriado.
             Show();
+            if (_added) Core.Logging.Log.Info("Explorer reiniciou: ícone da bandeja recriado");
             return false; // outros também querem saber
         }
         if (msg == Win32.WM_DPICHANGED && _added)

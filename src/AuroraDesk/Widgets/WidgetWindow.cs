@@ -121,6 +121,27 @@ internal sealed class WidgetWindow : Window
     /// </summary>
     public static nint DesktopAnchor { get; set; }
 
+    /// <summary>
+    /// Entre esta janela e o desktop só há outros widgets (ou janelas invisíveis)? Percorre a ordem Z
+    /// para baixo: barato, sem redesenhar nada.
+    /// </summary>
+    public bool IsJustAboveDesktop()
+    {
+        if (_hwnd == 0 || !IsDesktopLayer) return true;
+        nint anchor = DesktopAnchor != 0 && Win32.IsWindow(DesktopAnchor) ? DesktopAnchor : Win32.FindWindow("Progman", null);
+        if (anchor == 0) return true;
+        uint ownPid = (uint)Environment.ProcessId;
+        const int GW_HWNDNEXT = 2;
+        for (nint h = Win32.GetWindow(_hwnd, GW_HWNDNEXT); h != 0; h = Win32.GetWindow(h, GW_HWNDNEXT))
+        {
+            if (h == anchor) return true;
+            if (!Win32.IsWindowVisible(h)) continue;
+            Win32.GetWindowThreadProcessId(h, out uint pid);
+            if (pid != ownPid) return false; // uma janela de outro app está entre nós e o desktop
+        }
+        return false; // o desktop está acima de nós
+    }
+
     private nint DesktopInsertAfter()
     {
         nint anchor = DesktopAnchor != 0 && Win32.IsWindow(DesktopAnchor) ? DesktopAnchor : Win32.FindWindow("Progman", null);

@@ -67,6 +67,7 @@ internal sealed class WidgetManager : IDisposable
             foreach (var instance in Config.Widgets.Where(w => w.Enabled))
                 Open(instance);
         _host.State?.SetHidden(!Config.WidgetsVisible || _running.Count == 0);
+        WatchDesktopIfActive();
     }
 
     // ---------- abrir / fechar ----------
@@ -250,13 +251,56 @@ internal sealed class WidgetManager : IDisposable
 
     // ---------- camada da área de trabalho ----------
 
+    private static bool IsDesktopWindow(nint hwnd) => hwnd != 0 && Win32.ClassName(hwnd) is "WorkerW" or "Progman";
+
+    /// <summary>
+    /// Win+D traz o desktop para a frente; ao voltar para outra janela, ele desce de novo. Os
+    /// widgets acompanham, sempre logo acima dele. Se o desktop já estava em primeiro plano
+    /// (ex.: depois de um clique nele), o Win+D não gera evento de foco; por isso, enquanto o
+    /// desktop estiver em primeiro plano, e só nesse período, a ordem Z é conferida a cada
+    /// 400 ms (poucas chamadas GetWindow; nada é redesenhado).
+    /// </summary>
     private void OnForegroundChanged(nint hwnd)
     {
-        string cls = Win32.ClassName(hwnd);
-        if (cls is not ("WorkerW" or "Progman")) return;
-        // A área de trabalho foi ativada (clique ou Win+D): fica logo acima dela.
-        WidgetWindow.DesktopAnchor = hwnd;
-        foreach (var r in _running.Values) r.Window.SendToDesktopLayer();
+        bool desktop = IsDesktopWindow(hwnd);
+        if (!desktop && !_desktopWatch.IsEnabled) return; // foco entre janelas comuns: nada muda
+        WidgetWindow.DesktopAnchor = desktop ? hwnd : 0;
+        PlaceOnDesktop();
+        if (desktop) _desktopWatch.Start();
+        else
+        {
+            _desktopWatch.Stop();
+            _settle = 3; // o desktop ainda está descendo: confere mais algumas vezes
+            _settleTimer.Start();
+        }
+    }
+
+    private DispatcherTimer? _desktopWatchTimer, _settleTimerField;
+    private int _settle;
+
+    private DispatcherTimer _desktopWatch => _desktopWatchTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, (_, _) =>
+    {
+        if (!IsDesktopWindow(Win32.GetForegroundWindow())) { OnForegroundChanged(Win32.GetForegroundWindow()); return; }
+        PlaceOnDesktop(onlyIfNeeded: true);
+    }, _dispatcher) { IsEnabled = false };
+
+    private DispatcherTimer _settleTimer => _settleTimerField ??= new DispatcherTimer(TimeSpan.FromMilliseconds(200), DispatcherPriority.Background, (_, _) =>
+    {
+        PlaceOnDesktop(onlyIfNeeded: true);
+        if (--_settle <= 0) _settleTimer.Stop();
+    }, _dispatcher) { IsEnabled = false };
+
+    private void PlaceOnDesktop(bool onlyIfNeeded = false)
+    {
+        foreach (var r in _running.Values)
+            if (!onlyIfNeeded || !r.Window.IsJustAboveDesktop()) r.Window.SendToDesktopLayer();
+    }
+
+    /// <summary>Se o desktop estiver em primeiro plano agora (início, Explorer reiniciado), passa a vigiá-lo.</summary>
+    private void WatchDesktopIfActive()
+    {
+        nint fg = Win32.GetForegroundWindow();
+        if (IsDesktopWindow(fg)) OnForegroundChanged(fg);
     }
 
     private bool OnControlMessage(int msg, nint wParam, nint lParam)
@@ -268,6 +312,7 @@ internal sealed class WidgetManager : IDisposable
             _dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
             {
                 foreach (var r in _running.Values) r.Window.ApplyLayer();
+                WatchDesktopIfActive();
             });
         }
         else if (msg == Win32.WM_DISPLAYCHANGE)
@@ -404,6 +449,8 @@ internal sealed class WidgetManager : IDisposable
     public void Dispose()
     {
         _saveTimer.Stop();
+        _desktopWatchTimer?.Stop();
+        _settleTimerField?.Stop();
         _watcher?.Dispose();
         WindowEvents.ForegroundChanged -= OnForegroundChanged;
         _host.Control.Message -= OnControlMessage;
