@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>AuroraDesk</RootNamespace>
+    <AssemblyName>AuroraDesk</AssemblyName>
+    <ApplicationIcon>Assets\aurora.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject>AuroraDesk.Program</StartupObject>
+    <Product>Aurora Desk</Product>
+
+    <!-- Publicação: win-x64, dependente do runtime instalado, ReadyToRun (inicia mais rápido, menos JIT). -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AuroraDesk.Core\AuroraDesk.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\aurora.ico" />
+  </ItemGroup>
+</Project>

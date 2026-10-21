@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Núcleo sem dependência de interface: medidas, agendador, skins, temas, perfis, configuração e log. -->
+  <PropertyGroup>
+    <RootNamespace>AuroraDesk.Core</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="AuroraDesk.Core.Tests" />
+    <EmbeddedResource Include="Resources\**\*" LogicalName="AuroraDesk.%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

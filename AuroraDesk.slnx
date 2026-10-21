@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AuroraDesk.Core/AuroraDesk.Core.csproj" />
+    <Project Path="src/AuroraDesk/AuroraDesk.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AuroraDesk.Core.Tests/AuroraDesk.Core.Tests.csproj" />
+  </Folder>
+</Solution>
