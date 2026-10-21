@@ -81,6 +81,8 @@ public sealed class DockConfig
     public double ZoomFactor { get; set; } = 1.4;
     public bool ShowLabels { get; set; } = true;
     public bool ShowRunning { get; set; } = true;
+    /// <summary>Lupa no início do dock que abre a pesquisa do Windows (Win+S).</summary>
+    public bool SearchButton { get; set; } = true;
     /// <summary>"nenhum", "acrilico" ou "mica".</summary>
     public string Backdrop { get; set; } = "nenhum";
     public List<DockItem> Items { get; set; } = [];

@@ -214,7 +214,8 @@ internal sealed class SettingsWindow : Window
             Ui.Row("Reservar espaço na tela", Ui.Toggle(d.ReserveSpace, v => Apply(() => d.ReserveSpace = v)), "Com a barra do Windows visível. Janelas maximizadas param acima do dock. A reserva é desfeita ao sair."),
             Ui.Row("Reservar espaço com a barra do Windows oculta", Ui.Toggle(d.ReserveWhenTaskbarHidden, v => Apply(() => d.ReserveWhenTaskbarHidden = v)), "Padrão: ligado. O dock assume o lugar da barra e as janelas maximizadas param acima dele."),
             Ui.Row("Ocultar automaticamente", Ui.Toggle(d.AutoHide, v => Apply(() => d.AutoHide = v)), "Some quando o mouse sai; volta ao encostar na borda. Não vale enquanto houver espaço reservado."),
-            Ui.Row("Mostrar apps abertos não fixados", Ui.Toggle(d.ShowRunning, v => Apply(() => d.ShowRunning = v)))));
+            Ui.Row("Mostrar apps abertos não fixados", Ui.Toggle(d.ShowRunning, v => Apply(() => d.ShowRunning = v))),
+            Ui.Row("Botão de pesquisa", Ui.Toggle(d.SearchButton, v => Apply(() => d.SearchButton = v)), "Lupa no início do dock que abre a pesquisa do Windows (Win+S).")));
 
         page.Children.Add(Ui.Section("Três ilhas"));
         WrapPanel Checks(string[] all, List<string> selected, (string Key, string Label)[] labels)

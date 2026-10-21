@@ -175,7 +175,8 @@ internal sealed class DockSurface : FrameworkElement
             var iconRect = R(start + slot.Start, slot.Size, iconEdge, iconEdge + slot.Size);
             hit.Union(iconRect);
             if (_dragging && i == _pressIndex) dc.PushOpacity(0.35);
-            if (e.Icon is { } icon) dc.DrawImage(icon, iconRect);
+            if (e.Glyph is { } glyph) DrawGlyphButton(dc, theme, glyph, iconRect, i == _hover);
+            else if (e.Icon is { } icon) dc.DrawImage(icon, iconRect);
             else dc.DrawRoundedRectangle(_themes.Brush(theme.Surface), null, iconRect, 8, 8);
             if (_dragging && i == _pressIndex) dc.Pop();
 
@@ -199,6 +200,22 @@ internal sealed class DockSurface : FrameworkElement
             DrawLabel(dc, theme, _entries[_hover].Name, start + slots[_hover].Center, iconEdge + slots[_hover].Size + 8);
 
         _hitArea = hit;
+    }
+
+    private static readonly FontFamily GlyphFont = new("Segoe Fluent Icons, Segoe MDL2 Assets");
+
+    /// <summary>Botão do próprio dock (ex.: pesquisa): quadrado arredondado discreto com o ícone no centro.</summary>
+    private void DrawGlyphButton(DrawingContext dc, Theme theme, string glyph, Rect r, bool hover)
+    {
+        double inset = r.Width * 0.08;
+        var box = new Rect(r.X + inset, r.Y + inset, r.Width - 2 * inset, r.Height - 2 * inset);
+        double radius = Math.Min(theme.CornerRadius, box.Width / 3);
+        var fill = hover ? theme.Accent.WithOpacity(0.25) : theme.Surface;
+        dc.DrawRoundedRectangle(_themes.Brush(fill), _themes.Pen(theme.Border.WithOpacity(0.8), 1), box, radius, radius);
+        var ft = new FormattedText(glyph, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+            new Typeface(GlyphFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), box.Width * 0.6,
+            _themes.Brush(theme.Text), VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        dc.DrawText(ft, new Point(box.X + (box.Width - ft.Width) / 2, box.Y + (box.Height - ft.Height) / 2));
     }
 
     private void DrawLabel(DrawingContext dc, Theme theme, string text, double main, double fromEdge)

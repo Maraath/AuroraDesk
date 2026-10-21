@@ -132,6 +132,8 @@ internal sealed partial class DockManager : IDisposable
     {
         if (_window is null) return;
         var entries = new List<DockEntry>();
+        if (Config.SearchButton)
+            entries.Add(new DockEntry { Name = "Pesquisar", Glyph = "", IsSearch = true });
         foreach (var item in Config.Items)
         {
             var (identity, name, icon) = Resolve(item);
@@ -339,6 +341,7 @@ internal sealed partial class DockManager : IDisposable
     {
         if (index < 0 || index >= _entries.Count) return;
         var e = _entries[index];
+        if (e.IsSearch) { Win32.SendWinShortcut('S'); return; } // pesquisa do Windows
         if (button == MouseButton.Middle || !e.IsRunning) { Launch(e); return; }
 
         var windows = e.Windows;
@@ -438,7 +441,13 @@ internal sealed partial class DockManager : IDisposable
         if (_window is null) return;
         _hideTimer.Stop();
         var menu = new NativeMenu();
-        if (index >= 0 && index < _entries.Count && !_entries[index].IsSeparator)
+        if (index >= 0 && index < _entries.Count && _entries[index].IsSearch)
+        {
+            menu.Item("Pesquisar", () => Win32.SendWinShortcut('S'))
+                .Item("Ocultar o botão de pesquisa", () => { Config.SearchButton = false; Changed(); })
+                .Separator();
+        }
+        else if (index >= 0 && index < _entries.Count && !_entries[index].IsSeparator)
         {
             var e = _entries[index];
             menu.Item(e.Name, () => { }, enabled: false).Separator();
@@ -514,7 +523,8 @@ internal sealed partial class DockManager : IDisposable
             .Item("Ocultar automaticamente", () => Set(() => Config.AutoHide = !Config.AutoHide), isChecked: Config.AutoHide, enabled: !Reserve)
             .Item("Ampliar ao passar o mouse", () => Set(() => Config.Zoom = !Config.Zoom), isChecked: Config.Zoom)
             .Item("Mostrar nomes ao passar o mouse", () => Set(() => Config.ShowLabels = !Config.ShowLabels), isChecked: Config.ShowLabels)
-            .Item("Mostrar apps abertos não fixados", () => Set(() => Config.ShowRunning = !Config.ShowRunning), isChecked: Config.ShowRunning);
+            .Item("Mostrar apps abertos não fixados", () => Set(() => Config.ShowRunning = !Config.ShowRunning), isChecked: Config.ShowRunning)
+            .Item("Botão de pesquisa", () => Set(() => Config.SearchButton = !Config.SearchButton), isChecked: Config.SearchButton);
     }
 
     // ---------- itens padrão ----------

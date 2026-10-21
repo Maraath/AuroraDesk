@@ -14,6 +14,10 @@ internal sealed class DockEntry
     /// <summary>Caminho do shell para o ícone (arquivo, pasta ou shell:AppsFolder\AUMID).</summary>
     public string? IconSource { get; init; }
     public BitmapSource? Icon { get; set; }
+    /// <summary>Ícone desenhado com a fonte Segoe Fluent Icons (botões do próprio dock, como a pesquisa).</summary>
+    public string? Glyph { get; init; }
+    /// <summary>Botão de pesquisa do Windows (Win+S): fixo no início, não é um item fixado.</summary>
+    public bool IsSearch { get; init; }
     public List<WindowRecord> Windows { get; } = [];
     public bool IsRunning => Windows.Count > 0;
     public bool IsActive { get; set; }

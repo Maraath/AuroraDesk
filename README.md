@@ -73,7 +73,7 @@ O app tem uma instância só. Uma segunda execução abre as configurações da 
   - O clique direito mostra janelas, fechar, fixar/desafixar, abrir local do arquivo e as opções do dock.
 - **Dock em três ilhas** (padrão, nas bordas inferior e superior):
   - **Esquerda, estatísticas**: CPU e RAM com barrinha de uso, rede (download), clima da sua cidade e, opcionalmente, disco C: e bateria. Clicar na CPU ou na RAM abre o Gerenciador de Tarefas.
-  - **Centro**: os apps.
+  - **Centro**: a **lupa de pesquisa**, que abre a pesquisa do Windows (Win+S) e pode ser desligada em Configurações → Dock, seguida dos apps.
   - **Direita, bandeja**:
     - o **ícone do Aurora Desk** (o mesmo menu da bandeja, que some junto com a barra do Windows);
     - Wi-Fi ou cabo e volume (role o mouse para ajustar);
