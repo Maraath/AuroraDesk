@@ -138,7 +138,7 @@ public sealed class MeasureScheduler : IDisposable
             {
                 if (e.NextDue <= now)
                 {
-                    if (e.Measure.Update(context)) changed.Add(e.Measure);
+                    if (e.Measure.Update(context) || e.Measure.NotifyEveryRead) changed.Add(e.Measure);
                     e.NextDue = e.Measure.NextDue(now, e.Interval);
                     if (e.NextDue <= now) e.NextDue = now + TimeSpan.FromMilliseconds(100);
                 }

@@ -1,0 +1,20 @@
+{
+  // Rede: taxa de download e upload com histórico. O máximo do gráfico se ajusta sozinho.
+  "nome": "Rede",
+  "autor": "Aurora Desk",
+  "tamanho": [280, 132],
+  "fundo": true,
+  "medidas": {
+    "down": { "tipo": "rede", "direcao": "download", "intervalo": "2s" },
+    "up":   { "tipo": "rede", "direcao": "upload", "intervalo": "2s" }
+  },
+  "elementos": [
+    { "tipo": "texto", "texto": "REDE", "x": 20, "y": 14, "tamanho": 11, "peso": "SemiBold", "cor": "@textoSecundario" },
+    { "tipo": "texto", "texto": "↓ {down}", "x": 20, "y": 36, "tamanho": 15, "cor": "@texto" },
+    { "tipo": "texto", "texto": "↑ {up}", "x": 260, "y": 36, "tamanho": 15, "alinhamento": "direita", "cor": "@textoSecundario" },
+    { "tipo": "grafico", "medida": "down", "x": 20, "y": 66, "largura": 240, "altura": 48, "amostras": 60,
+      "cor": "@destaque", "preenchimento": "@destaque/20" },
+    { "tipo": "grafico", "medida": "up", "x": 20, "y": 66, "largura": 240, "altura": 48, "amostras": 60,
+      "cor": "@textoSecundario/70" }
+  ]
+}

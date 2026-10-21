@@ -29,6 +29,12 @@ public abstract class Measure
 
     public string? Error { get; private set; }
 
+    /// <summary>
+    /// Entregar a cada leitura, mesmo sem mudança. Gráficos ligam isso para rolar
+    /// no tempo certo mesmo quando o valor fica parado (ex.: rede em zero).
+    /// </summary>
+    public bool NotifyEveryRead { get; set; }
+
     /// <summary>Lê a medida. Devolve true se algo mudou. Nunca lança exceção.</summary>
     internal bool Update(SampleContext context)
     {

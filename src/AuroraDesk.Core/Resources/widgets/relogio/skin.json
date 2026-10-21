@@ -1,0 +1,18 @@
+{
+  // Relógio + data. As cores "@..." vêm do tema ativo; troque o tema e o widget acompanha.
+  "nome": "Relógio",
+  "autor": "Aurora Desk",
+  "tamanho": [280, 124],
+  "fundo": true,                       // painel com a cor e a opacidade do tema
+  "medidas": {
+    "hora": { "tipo": "relogio", "formato": "HH:mm" },              // lido na virada do minuto
+    "data": { "tipo": "relogio", "formato": "dddd, d 'de' MMMM" },
+    "ano":  { "tipo": "relogio", "formato": "yyyy" }
+  },
+  "elementos": [
+    { "tipo": "texto", "texto": "{hora}", "x": 20, "y": 8, "tamanho": 60, "peso": "Light", "cor": "@texto" },
+    { "tipo": "texto", "texto": "{data}", "x": 22, "y": 86, "tamanho": 14, "cor": "@textoSecundario" },
+    { "tipo": "texto", "texto": "{ano}", "x": 260, "y": 22, "tamanho": 12, "alinhamento": "direita", "cor": "@destaque" },
+    { "tipo": "forma", "x": 240, "y": 44, "largura": 20, "altura": 3, "raio": 1.5, "preenchimento": "@destaque" }
+  ]
+}

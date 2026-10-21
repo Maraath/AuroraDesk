@@ -38,6 +38,5 @@ internal sealed class App : Application
         // Um widget com defeito não pode derrubar o app: registra e segue.
         Log.Error("Erro na interface", e.Exception);
         e.Handled = true;
-        _host?.ReportUiFailure(e.Exception);
     }
 }

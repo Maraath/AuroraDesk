@@ -1,0 +1,13 @@
+{
+  // Exemplo extra (desligado por padrão): relógio analógico. "segundos": false economiza
+  // 59 de cada 60 redesenhos.
+  "nome": "Relógio analógico",
+  "autor": "Aurora Desk",
+  "tamanho": [160, 160],
+  "elementos": [
+    { "tipo": "forma", "forma": "elipse", "x": 0, "y": 0, "largura": 160, "altura": 160,
+      "preenchimento": "@painel", "contorno": "@borda", "espessuraContorno": 1 },
+    { "tipo": "relogioAnalogico", "x": 10, "y": 10, "largura": 140, "altura": 140, "segundos": true,
+      "marcas": "@textoSecundario", "ponteiroHoras": "@texto", "ponteiroMinutos": "@texto", "ponteiroSegundos": "@destaque" }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  // Monitor do sistema: CPU (com histórico), RAM e disco C:.
+  "nome": "Sistema",
+  "autor": "Aurora Desk",
+  "tamanho": [280, 196],
+  "fundo": true,
+  "medidas": {
+    "cpu":   { "tipo": "cpu", "intervalo": "1s" },
+    "ram":   { "tipo": "memoria" },                                   // % de uso (padrão 2 s)
+    "ramUsada": { "tipo": "memoria", "modo": "usada" },
+    "disco": { "tipo": "disco", "unidade": "C:" },                    // % de uso (padrão 30 s)
+    "livre": { "tipo": "disco", "unidade": "C:", "modo": "livre" }
+  },
+  "elementos": [
+    { "tipo": "texto", "texto": "SISTEMA", "x": 20, "y": 14, "tamanho": 11, "peso": "SemiBold", "cor": "@textoSecundario" },
+
+    { "tipo": "texto", "texto": "CPU", "x": 20, "y": 40, "tamanho": 13, "cor": "@texto" },
+    { "tipo": "texto", "texto": "{cpu:0}%", "x": 260, "y": 40, "tamanho": 13, "alinhamento": "direita", "cor": "@destaque" },
+    { "tipo": "grafico", "medida": "cpu", "x": 20, "y": 62, "largura": 240, "altura": 34, "amostras": 60,
+      "cor": "@destaque", "preenchimento": "@destaque/18" },
+
+    { "tipo": "texto", "texto": "RAM", "x": 20, "y": 106, "tamanho": 13, "cor": "@texto" },
+    { "tipo": "texto", "texto": "{ramUsada} · {ram:0}%", "x": 260, "y": 106, "tamanho": 13, "alinhamento": "direita", "cor": "@textoSecundario" },
+    { "tipo": "barra", "medida": "ram", "x": 20, "y": 128, "largura": 240, "altura": 5, "cor": "@destaque", "fundo": "@superficie" },
+
+    { "tipo": "texto", "texto": "Disco C:", "x": 20, "y": 146, "tamanho": 13, "cor": "@texto" },
+    { "tipo": "texto", "texto": "{livre} livres", "x": 260, "y": 146, "tamanho": 13, "alinhamento": "direita", "cor": "@textoSecundario" },
+    { "tipo": "barra", "medida": "disco", "x": 20, "y": 168, "largura": 240, "altura": 5, "cor": "@destaque", "fundo": "@superficie" }
+  ]
+}

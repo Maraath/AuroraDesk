@@ -6,11 +6,13 @@ using AuroraDesk.Core.Formatting;
 using AuroraDesk.Core.Logging;
 using AuroraDesk.Core.Measures;
 using AuroraDesk.Core.Scheduling;
+using AuroraDesk.Core.Skins;
 using AuroraDesk.Core.Theming;
 using AuroraDesk.Infrastructure;
 using AuroraDesk.Interop;
 using AuroraDesk.Theming;
 using AuroraDesk.Tray;
+using AuroraDesk.Widgets;
 
 namespace AuroraDesk;
 
@@ -20,12 +22,12 @@ namespace AuroraDesk;
 internal sealed class AppHost : IDisposable
 {
     private readonly Application _app;
-    private readonly Dispatcher _dispatcher;
+    private DebouncedWatcher? _themeWatcher, _fontWatcher;
 
     public AppHost(Application app)
     {
         _app = app;
-        _dispatcher = app.Dispatcher;
+        Dispatcher = app.Dispatcher;
         Paths = new AppPaths();
         Paths.EnsureCreated();
         Log.Initialize(Paths.Logs);
@@ -38,21 +40,23 @@ internal sealed class AppHost : IDisposable
             System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
 
         Scheduler = new MeasureScheduler(MeasureRegistry.CreateDefault(),
-            action => _dispatcher.BeginInvoke(DispatcherPriority.Background, action));
+            action => Dispatcher.BeginInvoke(DispatcherPriority.Background, action));
         Control = new ControlWindow();
         Tray = new TrayIcon(Control, "Aurora Desk");
         Themes = new ThemeService(Config, new ThemeStore(Paths.Themes), new FontService(Paths.Fonts));
+        Widgets = new WidgetManager(this);
     }
 
-    public ThemeService Themes { get; }
-    private DebouncedWatcher? _themeWatcher, _fontWatcher;
-
+    public Dispatcher Dispatcher { get; }
     public AppPaths Paths { get; }
     public ConfigStore ConfigStore { get; }
     public AppConfig Config { get; }
     public MeasureScheduler Scheduler { get; }
     public ControlWindow Control { get; }
     public TrayIcon Tray { get; }
+    public ThemeService Themes { get; }
+    public WidgetManager Widgets { get; }
+    public SystemStateMonitor? State { get; private set; }
 
     public void Start(bool openSettings)
     {
@@ -61,15 +65,20 @@ internal sealed class AppHost : IDisposable
         Tray.Activated += OpenSettings;
         Tray.Show();
 
+        WindowEvents.Start();
+        State = new SystemStateMonitor(Control, Scheduler, Config.Performance, Dispatcher);
+
         // Temas e fontes recarregam sozinhos ao salvar arquivos nas pastas do usuário.
-        _themeWatcher = new DebouncedWatcher(Paths.Themes, "*.json", false, _dispatcher);
+        _themeWatcher = new DebouncedWatcher(Paths.Themes, "*.json", false, Dispatcher);
         _themeWatcher.Changed += _ => Themes.ReloadFiles();
-        _fontWatcher = new DebouncedWatcher(Paths.Fonts, "*.*", false, _dispatcher, delayMs: 800);
+        _fontWatcher = new DebouncedWatcher(Paths.Fonts, "*.*", false, Dispatcher, delayMs: 800);
         _fontWatcher.Changed += _ => Themes.ReloadFonts();
+
+        Widgets.Start();
 
         var startedAt = Process.GetCurrentProcess().StartTime;
         // Medido quando a fila de interface esvazia, isto é, com tudo já visível.
-        _dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
+        Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
             Log.Info($"Inicialização concluída em {(DateTime.Now - startedAt).TotalMilliseconds:0} ms"));
 
         if (openSettings) OpenSettings();
@@ -116,8 +125,21 @@ internal sealed class AppHost : IDisposable
             }, isChecked: Config.FollowWindowsAccent)
             .Item("Abrir pasta de temas", () => OpenFolder(Paths.Themes));
 
+        var widgetMenu = new NativeMenu();
+        foreach (var skin in SkinLibrary.Discover(Widgets.Folder))
+        {
+            string name = skin;
+            widgetMenu.Item(name, () => Widgets.SetEnabled(name, !Widgets.IsEnabled(name)), isChecked: Widgets.IsEnabled(name));
+        }
+        widgetMenu.Separator()
+            .Item("Recarregar todos", Widgets.ReloadAll)
+            .Item("Desativar o clique através", Widgets.DisableClickThrough, enabled: Config.Widgets.Any(w => w.ClickThrough))
+            .Item("Abrir pasta de widgets", () => OpenFolder(Widgets.Folder));
+
         var menu = new NativeMenu()
             .Submenu("Tema", themeMenu)
+            .Submenu("Widgets", widgetMenu)
+            .Item(Config.WidgetsVisible ? "Ocultar widgets" : "Mostrar widgets", () => Widgets.SetVisible(!Config.WidgetsVisible))
             .Separator()
             .Item("Configurações", OpenSettings)
             .Item("Abrir pasta de dados", () => OpenFolder(Paths.Roaming))
@@ -144,17 +166,16 @@ internal sealed class AppHost : IDisposable
         catch (Exception ex) { Log.Error("Falha ao salvar config.json", ex); }
     }
 
-    public void ReportUiFailure(Exception ex)
-    {
-        // Ponto único para o motor de widgets isolar o widget que falhou (M3).
-    }
-
     public void Exit() => _app.Shutdown();
 
     public void Dispose()
     {
+        SaveConfig();
+        Widgets.Dispose();
         _themeWatcher?.Dispose();
         _fontWatcher?.Dispose();
+        State?.Dispose();
+        WindowEvents.Stop();
         Scheduler.Dispose();
         Tray.Dispose();
         Control.Dispose();

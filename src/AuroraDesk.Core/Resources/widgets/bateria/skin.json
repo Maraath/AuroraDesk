@@ -1,0 +1,18 @@
+{
+  // Bateria: arco com o nível e o estado (carregando, na tomada, na bateria).
+  "nome": "Bateria",
+  "autor": "Aurora Desk",
+  "tamanho": [220, 110],
+  "fundo": true,
+  "medidas": {
+    "nivel":  { "tipo": "bateria", "modo": "nivel" },
+    "estado": { "tipo": "bateria", "modo": "estado" }
+  },
+  "elementos": [
+    { "tipo": "arco", "medida": "nivel", "x": 16, "y": 15, "largura": 80, "altura": 80, "espessura": 7,
+      "cor": "@destaque", "fundo": "@superficie" },
+    { "tipo": "texto", "texto": "{nivel:0}%", "x": 56, "y": 42, "tamanho": 17, "peso": "SemiBold", "alinhamento": "centro", "cor": "@texto" },
+    { "tipo": "texto", "texto": "BATERIA", "x": 112, "y": 34, "tamanho": 11, "peso": "SemiBold", "cor": "@textoSecundario" },
+    { "tipo": "texto", "texto": "{estado}", "x": 112, "y": 54, "tamanho": 14, "cor": "@texto" }
+  ]
+}
