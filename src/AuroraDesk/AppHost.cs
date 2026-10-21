@@ -210,9 +210,13 @@ internal sealed class AppHost : IDisposable
     /// <summary>Aplica a configuração do clima à fonte compartilhada.</summary>
     public void ApplyWeather(bool save = true)
     {
+        // Outra cidade (ou o clima acabou de ser ligado): descarta o tempo guardado e consulta já.
+        bool changed = Weather.Latitude != Config.Weather.Latitude || Weather.Longitude != Config.Weather.Longitude || Weather.Enabled != Config.Weather.Enabled;
+        if (changed) Weather.Invalidate();
         Weather.Enabled = Config.Weather.Enabled;
         Weather.Latitude = Config.Weather.Latitude;
         Weather.Longitude = Config.Weather.Longitude;
+        if (changed) Scheduler?.RefreshNow("clima");
         if (save) SaveConfig();
     }
 

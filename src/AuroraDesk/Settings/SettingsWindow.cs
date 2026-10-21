@@ -495,18 +495,66 @@ internal sealed class SettingsWindow : Window
             if (double.TryParse(lon.Text.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var lo)) w.Longitude = Math.Clamp(lo, -180, 180);
             _host.ApplyWeather();
         }
-        city.LostFocus += (_, _) => SaveWeather();
         lat.LostFocus += (_, _) => SaveWeather();
         lon.LostFocus += (_, _) => SaveWeather();
         var coords = new StackPanel { Orientation = Orientation.Horizontal };
         coords.Children.Add(lat);
         coords.Children.Add(new Border { Width = 8 });
         coords.Children.Add(lon);
+
+        // Busca pelo nome: ao parar de digitar (0,8 s), consulta a geocodificação da Open-Meteo,
+        // aplica a cidade mais provável e oferece as outras com o mesmo nome.
+        var status = Ui.Note("");
+        var results = new ComboBox { MinWidth = 320, Visibility = Visibility.Collapsed };
+        void ApplyPlace(Core.Measures.Place p)
+        {
+            w.City = p.Name;
+            w.Latitude = Math.Round(p.Latitude, 4);
+            w.Longitude = Math.Round(p.Longitude, 4);
+            lat.Text = w.Latitude.ToString(CultureInfo.InvariantCulture);
+            lon.Text = w.Longitude.ToString(CultureInfo.InvariantCulture);
+            status.Text = $"Usando: {p.Display} ({p.Coordinates})";
+            _host.ApplyWeather();
+        }
+        results.SelectionChanged += (_, _) => { if (results.SelectedItem is ComboBoxItem { Tag: Core.Measures.Place p }) ApplyPlace(p); };
+        CancellationTokenSource? pending = null;
+        var typing = new DispatcherTimer(TimeSpan.FromMilliseconds(800), DispatcherPriority.Background, async (s, _) =>
+        {
+            ((DispatcherTimer)s!).Stop();
+            string query = city.Text.Trim();
+            if (query.Length < 2) return;
+            pending?.Cancel();
+            pending = new CancellationTokenSource();
+            var token = pending.Token;
+            status.Text = $"Procurando \"{query}\"…";
+            try
+            {
+                var places = await Core.Measures.Geocoding.SearchAsync(query, Strings.Language, token);
+                if (token.IsCancellationRequested) return;
+                results.Items.Clear();
+                if (places.Count == 0) { status.Text = $"Nenhuma cidade encontrada para \"{query}\"."; results.Visibility = Visibility.Collapsed; return; }
+                foreach (var p in places) results.Items.Add(new ComboBoxItem { Content = $"{p.Display}  ({p.Coordinates})", Tag = p });
+                results.Visibility = places.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+                results.SelectedIndex = 0; // aplica a mais provável (a mais populosa)
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                status.Text = "Não foi possível buscar a cidade (sem internet?). Informe a latitude e a longitude à mão.";
+                Core.Logging.Log.Warn($"Busca de cidade falhou: {ex.Message}");
+            }
+        }, Dispatcher) { IsEnabled = false };
+        city.TextChanged += (_, _) => { typing.Stop(); typing.Start(); };
+        city.KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Enter) { typing.Stop(); typing.Interval = TimeSpan.FromMilliseconds(1); typing.Start(); typing.Interval = TimeSpan.FromMilliseconds(800); } };
+        Closed += (_, _) => { typing.Stop(); pending?.Cancel(); };
+
         page.Children.Add(Ui.Card(
-            Ui.Note("É o único recurso que usa a internet: consulta api.open-meteo.com (sem conta e sem chave) a cada 30 minutos, enviando só a latitude e a longitude abaixo. Desligado por padrão.", Ui.Warning),
+            Ui.Note("É o único recurso que usa a internet: consulta api.open-meteo.com (sem conta e sem chave) a cada 30 minutos, enviando só a latitude e a longitude. A busca de cidade envia só o nome digitado. Desligado por padrão.", Ui.Warning),
             Ui.Row("Ativar o clima", Ui.Toggle(w.Enabled, v => { w.Enabled = v; _host.ApplyWeather(); if (v) _host.Widgets.SetEnabled("clima", true); })),
-            Ui.Row("Cidade (só para exibição)", city),
-            Ui.Row("Latitude, longitude", coords, "Ex.: São Paulo -23.55, -46.63 · Rio de Janeiro -22.91, -43.17")));
+            Ui.Row("Cidade", city, "Digite o nome: a latitude e a longitude são preenchidas sozinhas."),
+            results,
+            status,
+            Ui.Row("Latitude, longitude", coords, "Preenchidas pela busca; dá para ajustar à mão.")));
 
         page.Children.Add(Ui.Section("Perfis"));
         page.Children.Add(Ui.Card(

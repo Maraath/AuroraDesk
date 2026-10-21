@@ -106,6 +106,19 @@ public sealed class MeasureScheduler : IDisposable
         return entry.Measure;
     }
 
+    /// <summary>Lê agora as medidas de um tipo (ex.: "clima" depois de trocar a cidade).</summary>
+    public void RefreshNow(string type)
+    {
+        bool any = false;
+        lock (_lock)
+        {
+            var now = _time.GetUtcNow();
+            foreach (var e in _entries.Values)
+                if (e.Measure.Spec.Type.Equals(type, StringComparison.OrdinalIgnoreCase)) { e.NextDue = now; any = true; }
+        }
+        if (any) Reschedule(TimeSpan.Zero);
+    }
+
     public void Unsubscribe(MeasureSpec spec)
     {
         lock (_lock)

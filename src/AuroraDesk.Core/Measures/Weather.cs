@@ -27,6 +27,13 @@ public sealed class WeatherSource
     public WeatherReport? Current { get; private set; }
     public string? Error { get; private set; }
 
+    /// <summary>Esquece os dados atuais (a cidade mudou): a próxima leitura consulta de novo.</summary>
+    public void Invalidate()
+    {
+        Current = null;
+        _lastAttempt = DateTimeOffset.MinValue;
+    }
+
     /// <summary>Dispara uma atualização em segundo plano se o cache venceu.</summary>
     public void RefreshIfStale(DateTimeOffset now)
     {

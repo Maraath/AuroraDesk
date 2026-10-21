@@ -234,7 +234,10 @@ O script mostra Private Bytes, Working Set (total, pico e privado), CPU média o
 - **Restaurar original** devolve os valores do registro guardados em `backup\windows-original.json`, libera o espaço do dock e mostra a barra de tarefas de novo (desligando a opção de ocultá-la).
 - **Barra de tarefas do Windows**: por padrão, fica **oculta enquanto o Aurora Desk estiver aberto** e volta sozinha quando ele fecha. Veja "Barra de tarefas do Windows" abaixo.
 - O papel de parede e as cores do Windows **não são alterados**; o modo claro/escuro e a cor de destaque são só lidos.
-- Rede: somente o clima, se você ligar, consulta `api.open-meteo.com` a cada 30 min, enviando só latitude e longitude. Não há telemetria.
+- Rede: só o clima, se você ligar, usa a internet.
+  - O tempo é consultado em `api.open-meteo.com` a cada 30 min, enviando só latitude e longitude.
+  - Ao digitar a cidade em Configurações → Geral, o app busca o nome em `geocoding-api.open-meteo.com` (só o texto digitado), preenche a latitude e a longitude da cidade mais provável e mostra as outras com o mesmo nome para escolher.
+  - Não há telemetria.
 - Falhas são isoladas: uma medida ou um widget com erro é registrado em `%LOCALAPPDATA%\AuroraDesk\logs\aurora.log` (rotativo, até 1 MB) e o resto continua.
 
 ## Decisões

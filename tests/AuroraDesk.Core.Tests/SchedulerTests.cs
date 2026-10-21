@@ -119,6 +119,18 @@ public class SchedulerTests
     }
 
     [Fact]
+    public void RefreshNowLeAntesDoVencimento()
+    {
+        var (s, created) = Create();
+        s.Subscribe(new MeasureSpec("conta"));
+        var now = DateTimeOffset.UtcNow.AddSeconds(1);
+        s.RunDue(now);
+        s.RefreshNow("conta");
+        s.RunDue(DateTimeOffset.UtcNow.AddSeconds(1.1)); // antes do intervalo de 1 s
+        Assert.Equal(2, created[0].Reads);
+    }
+
+    [Fact]
     public void MedidaQueFalhaNaoDerrubaAsOutras()
     {
         var (s, created) = Create();

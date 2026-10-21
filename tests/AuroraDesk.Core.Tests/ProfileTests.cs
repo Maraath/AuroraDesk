@@ -131,6 +131,25 @@ public sealed class ProfileTests : IDisposable
     }
 
     [Fact]
+    public void InterpretaBuscaDeCidadeEOrdenaPorPopulacao()
+    {
+        // Trecho real da resposta da geocodificação da Open-Meteo para "Belém".
+        var places = Geocoding.Parse("""
+            { "results": [
+              { "name": "Belem", "latitude": 31.70487, "longitude": 35.20376, "country": "", "admin1": "Margem Ocidental", "population": 29019 },
+              { "name": "Belém", "latitude": -1.45583, "longitude": -48.50444, "country": "Brasil", "admin1": "Pará", "population": 1499641 },
+              { "name": "Belém", "latitude": -6.69167, "longitude": -35.53333, "country": "Brasil", "admin1": "Paraíba" }
+            ] }
+            """);
+        Assert.Equal(3, places.Count);
+        Assert.Equal("Belém, Pará, Brasil", places[0].Display);
+        Assert.Equal(-1.45583, places[0].Latitude);
+        Assert.Equal("-1.4558, -48.5044", places[0].Coordinates);
+        Assert.Equal("Belem, Margem Ocidental", places[1].Display);
+        Assert.Empty(Geocoding.Parse("""{ "generationtime_ms": 0.5 }""")); // nada encontrado
+    }
+
+    [Fact]
     public void ClimaSemDadosReleLogo()
     {
         var now = DateTimeOffset.Now;
