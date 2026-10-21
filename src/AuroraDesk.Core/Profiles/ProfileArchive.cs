@@ -108,7 +108,7 @@ public static class ProfileArchive
     }
 
     /// <summary>Caminho dentro de <paramref name="root"/>, ou vazio se tentar sair dele (../, C:\, \\servidor).</summary>
-    internal static string SafeCombine(string root, string relative)
+    public static string SafeCombine(string root, string relative)
     {
         if (string.IsNullOrWhiteSpace(relative) || Path.IsPathRooted(relative) || relative.Contains(':')) return "";
         string full = Path.GetFullPath(Path.Combine(root, relative));

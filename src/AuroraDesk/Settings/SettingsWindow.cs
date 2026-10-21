@@ -122,7 +122,8 @@ internal sealed class SettingsWindow : Window
             Ui.Buttons(
                 Ui.Button("Abrir pasta de widgets", () => AppHost.OpenFolder(_host.Widgets.Folder)),
                 Ui.Button("Recarregar todos", _host.Widgets.ReloadAll),
-                Ui.Button("Reinstalar exemplos ausentes", () => { SkinLibrary.InstallSamples(_host.Widgets.Folder); Refresh(); }))));
+                Ui.Button("Reinstalar exemplos ausentes", () => { SkinLibrary.InstallSamples(_host.Widgets.Folder); Refresh(); }),
+                Ui.Button("Importar skin do Rainmeter (.ini)…", ImportRainmeter))));
 
         page.Children.Add(Ui.Section("Skins instalados"));
         page.Children.Add(Ui.Note("Cada pasta em %APPDATA%\\AuroraDesk\\widgets com um skin.json vira um widget. Salvar o arquivo atualiza o widget na hora."));
@@ -168,6 +169,19 @@ internal sealed class SettingsWindow : Window
             page.Children.Add(Ui.Card([.. items]));
         }
         return page;
+    }
+
+    private void ImportRainmeter()
+    {
+        var dialog = new OpenFileDialog { Title = "Importar skin do Rainmeter", Filter = "Skin do Rainmeter|*.ini" };
+        if (dialog.ShowDialog(this) != true) return;
+        var (skin, warnings) = _host.Widgets.ImportRainmeter(dialog.FileName);
+        string details = warnings.Count == 0
+            ? "Tudo foi convertido."
+            : $"{warnings.Count} item(ns) não suportado(s):\n• " + string.Join("\n• ", warnings.Take(12)) + (warnings.Count > 12 ? "\n…(veja o log)" : "");
+        MessageBox.Show(this, $"Importado como \"{skin}\" e ligado.\n\n{details}\n\nO Aurora Desk importa um subconjunto do Rainmeter (sem scripts Lua, plugins nem ações).",
+            "Aurora Desk", MessageBoxButton.OK, warnings.Count == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+        Refresh();
     }
 
     private ComboBox FontCombo(string? current, Action<string?> changed)

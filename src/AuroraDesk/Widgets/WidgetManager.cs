@@ -352,6 +352,45 @@ internal sealed class WidgetManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Converte um skin .ini do Rainmeter (subconjunto) para uma nova pasta de widget, copia as
+    /// imagens referenciadas (só caminhos relativos e formatos de imagem) e liga o widget.
+    /// </summary>
+    public (string Skin, IReadOnlyList<string> Warnings) ImportRainmeter(string iniPath)
+    {
+        string baseName = string.Concat(Path.GetFileNameWithoutExtension(iniPath).Split(Path.GetInvalidFileNameChars())).Trim();
+        if (baseName.Length == 0) baseName = "rainmeter";
+        string skin = "rm-" + baseName.ToLowerInvariant().Replace(' ', '-');
+        for (int n = 2; Directory.Exists(Path.Combine(Folder, skin)); n++) skin = $"rm-{baseName.ToLowerInvariant().Replace(' ', '-')}-{n}";
+
+        var result = RainmeterImporter.Convert(File.ReadAllText(iniPath), baseName);
+        string target = Path.Combine(Folder, skin);
+        Directory.CreateDirectory(target);
+
+        var warnings = result.Warnings.ToList();
+        string source = Path.GetDirectoryName(iniPath)!;
+        foreach (var image in result.Images.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            string ext = Path.GetExtension(image).ToLowerInvariant();
+            string from = Core.Profiles.ProfileArchive.SafeCombine(source, image);
+            string to = Core.Profiles.ProfileArchive.SafeCombine(target, image);
+            if (ext is not (".png" or ".jpg" or ".jpeg" or ".bmp" or ".gif") || from.Length == 0 || to.Length == 0 || !File.Exists(from))
+            {
+                warnings.Add($"Imagem '{image}' não copiada");
+                continue;
+            }
+            Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+            File.Copy(from, to, overwrite: true);
+        }
+
+        // Grava por último: o hot reload só vê o skin já completo.
+        File.WriteAllText(SkinLibrary.SkinFile(Folder, skin), result.Json);
+        foreach (var w in warnings) Log.Warn($"Importação Rainmeter ({skin}): {w}");
+        Log.Info($"Skin do Rainmeter importado como '{skin}' ({warnings.Count} aviso(s))");
+        SetEnabled(skin, true);
+        return (skin, warnings);
+    }
+
     /// <summary>Remove o clique através de todos os widgets (atalho da bandeja).</summary>
     public void DisableClickThrough()
     {

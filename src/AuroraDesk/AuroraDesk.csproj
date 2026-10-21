@@ -13,6 +13,10 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
     <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Medido (tools\experimentos.ps1): com ReadyToRun, desligar o JIT em camadas evita recompilar
+         métodos quentes; -2 MB e -25% de CPU na inicialização. -->
+    <TieredCompilation>false</TieredCompilation>
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
   <ItemGroup>

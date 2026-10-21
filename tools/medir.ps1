@@ -99,7 +99,7 @@ if (-not $SemRegistro) {
         $cab = @(
             '# Medições de consumo',
             '',
-            'Geradas por `tools\medir.ps1` (60 s, app publicado em Release com ReadyToRun). CPU em % do total de núcleos.',
+            '## Histórico (`tools\medir.ps1`)',
             '',
             '| Data | Rótulo | Private Bytes (MB) | Working Set (MB) | WS privado (MB) | CPU ociosa (%) | Pico CPU 1 s (%) | Handles | Threads | Início (ms) |',
             '|---|---|---|---|---|---|---|---|---|---|'

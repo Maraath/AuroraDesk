@@ -1,6 +1,57 @@
 # Medições de consumo
 
-Geradas por `tools\medir.ps1` (60 s, app publicado em Release com ReadyToRun). CPU em % do total de núcleos.
+Máquina: notebook com Windows 11 Pro 26200, Intel UHD + NVIDIA RTX 3050 Laptop, .NET 10.0.13.
+O app foi publicado em Release (ReadyToRun) e medido por `tools\medir.ps1`, que roda por 60 s. A CPU está em % do total de núcleos e a "CPU ociosa" é a média dos 10 s em diante.
+A tabela de histórico fica **no fim do arquivo**, porque o script anexa uma linha a cada execução.
+
+## Experimentos de runtime (`tools\experimentos.ps1`, 35 s, dock + 4 widgets)
+
+| Variação | Private Bytes (MB) | Pico WS (MB) | CPU total (s) |
+|---|---|---|---|
+| padrão (runtimeconfig do M5) | 61,6 | 104,0 | 1,12 |
+| GCgen0size = 1 MB | 61,8 | 105,3 | 1,20 |
+| GCConserveMemory = 7 | 61,7 | 106,3 | 1,30 |
+| **TieredCompilation desligada** (adotada) | **59,6** | **102,1** | **0,84** |
+| TC_QuickJitForLoops desligado | 61,5 | 104,3 | 1,02 |
+| GCHeapHardLimit = 32 MB | 61,9 | 105,7 | 1,30 |
+
+Outros números medidos durante o desenvolvimento:
+
+| Situação | Private Bytes |
+|---|---|
+| Só a bandeja com renderização **por GPU** (padrão do WPF) | 140,1 MB (os drivers NVIDIA/Intel são carregados no processo) |
+| Só a bandeja com renderização **por software** | 55,1 MB |
+| Dock com fundo do DWM (`DWMWA_SYSTEMBACKDROP_TYPE`, exige GPU) | 156,3 MB (descartado) |
+| Dock com acrílico via accent policy (build Debug) | 68,6 MB, contra ~66 MB sem acrílico |
+| Configurações abertas / depois de fechar (Debug) | 83,3 MB / 72,8 MB, contra 65,5 MB antes de abrir |
+
+## Verificação
+
+Testado de verdade nesta máquina, com capturas de tela e UI Automation:
+
+- 106 testes automatizados do núcleo passando (`dotnet test`).
+- Os 4 widgets aparecem, atualizam (o relógio vira o minuto) e acompanham a troca de tema na hora.
+- Hot reload: editar `skin.json` recarrega em ~1 s; um JSON quebrado mantém a versão anterior com uma faixa de erro.
+- Dock:
+  - itens padrão e apps em execução com indicadores;
+  - ampliação ao passar o mouse, com cursor posicionado por script;
+  - reserva de espaço (AppBar), que reduz a área de trabalho de 1032 para 959 px e volta a 1032 ao sair;
+  - acrílico.
+- Configurações: as 6 páginas abrem; ao fechar, a memória é liberada.
+- "Iniciar com o Windows" grava a chave Run e "Restaurar original" a remove e apaga o backup.
+- O app fecha com `--sair` e tem uma instância só.
+
+Não verificado (ou verificado só parcialmente):
+
+- Reinício do Explorer com widgets na área de trabalho. O código reaplica as camadas em `TaskbarCreated` e não depende do WorkerW, mas o Explorer não foi reiniciado de propósito.
+- Win+D ("Mostrar área de trabalho"): a âncora muda para a janela ativada, mas o teste não foi feito.
+- Pausa ao bloquear a tela, monitor desligado e tela cheia: os gatilhos estão implementados com as notificações oficiais, mas não foram disparados manualmente.
+- Arrastar arquivos para o dock, reordenar arrastando e os menus de contexto dos widgets e do dock: precisam de interação com o mouse real e não foram exercitados.
+- Importação de um skin do Rainmeter pela interface: o conversor está coberto por testes, mas o botão não foi clicado de ponta a ponta.
+- Clima com a rede ligada: o parser foi testado com uma resposta de exemplo, sem consulta real à API.
+- Multi-monitor e DPI diferentes por monitor: a máquina de teste tem um único monitor.
+
+## Histórico (`tools\medir.ps1`)
 
 | Data | Rótulo | Private Bytes (MB) | Working Set (MB) | WS privado (MB) | CPU ociosa (%) | Pico CPU 1 s (%) | Handles | Threads | Início (ms) |
 |---|---|---|---|---|---|---|---|---|---|
@@ -10,3 +61,4 @@ Geradas por `tools\medir.ps1` (60 s, app publicado em Release com ReadyToRun). C
 | 2026-10-21 15:51 | M3 - 4 widgets (relógio, sistema, rede, bateria) | 61,3 | 96,5 | 19,8 | 0,06 | 0,39 | 483 | 18 | 1222 |
 | 2026-10-21 16:03 | M4 - dock + 4 widgets | 62,1 | 101,5 | 23,0 | 0,10 | 0,65 | 507 | 20 | 812 |
 | 2026-10-21 16:17 | M5 - dock + 4 widgets + configurações (fechada) | 62,1 | 25,2 | 8,1 | 0,05 | 0,65 | 506 | 19 | 725 |
+| 2026-10-21 16:23 | M6 - final: dock + 4 widgets, TieredCompilation off | 60,2 | 16,5 | 6,4 | 0,03 | 0,26 | 497 | 17 | 804 |
