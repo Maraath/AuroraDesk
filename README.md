@@ -82,7 +82,10 @@ O app tem uma instância só. Uma segunda execução abre as configurações da 
 
     Os ícones do sistema abrem as configurações rápidas do Windows (Win+A) e o relógio abre as notificações e o calendário (Win+N). Enquanto esses painéis estão abertos, o Windows mostra a própria barra por baixo; ela some de novo ao fechá-los.
   - Escolha os itens em Configurações → Dock → Três ilhas. As ilhas usam as mesmas medidas dos widgets, lidas uma vez só.
-  - Ícones de outros apps da bandeja (Discord, Steam...) ainda não aparecem: eles pertencem à barra do Windows.
+  - **Ícones dos outros apps da bandeja** (Discord, Steam...): a seta **^** no começo da ilha direita abre o painel de ícones da bandeja do próprio Windows, logo acima da ilha. Clique esquerdo, direito, menus e arrastar funcionam como sempre. Pode ser desligada em Configurações → Dock → Três ilhas.
+    - Por que o painel do Windows, e não os ícones desenhados dentro da ilha: no Windows 11, a bandeja não entrega os ícones a outros programas. A interface antiga (`ITrayNotify`) não devolve nada, e a árvore de acessibilidade fica vazia com a barra oculta.
+    - A alternativa seria o app se registrar como a barra do Windows para receber os ícones, como fazem barras substitutas como o RetroBar. Isso exige repassar ao Explorer todas as mensagens de bandeja e de AppBar dos outros programas, e é invasivo demais para o objetivo de "leve e reversível".
+    - A seta usa os atalhos oficiais Win+B (foco na bandeja) e Enter.
 - **Configurações**: abas Widgets, Dock, Temas, Fontes, Desempenho e Geral.
 
 ## Como criar um widget

@@ -151,6 +151,9 @@ internal sealed partial class DockManager
             if (item is not null) _leftItems.Add(item);
         }
 
+        if (Config.TrayOverflow)
+            _rightItems.Add(new IconButtonItem("bandeja", "", "Ícones ocultos da bandeja (outros apps)", OpenHiddenTrayIcons));
+
         foreach (var key in Core.Config.DockConfig.AllRightItems.Where(k => Config.RightItems.Contains(k)))
         {
             IslandItem? item = key switch
@@ -177,6 +180,20 @@ internal sealed partial class DockManager
     }
 
     private static void QuickSettings() => Win32.SendWinShortcut('A');
+
+    /// <summary>
+    /// Abre o painel nativo de ícones ocultos da bandeja: Win+B põe o foco na seta da bandeja do
+    /// Windows e Enter a abre. Os ícones continuam sendo do Windows (clique direito, menus e
+    /// arrastar funcionam), sem o app se passar pela barra de tarefas.
+    /// </summary>
+    private void OpenHiddenTrayIcons()
+    {
+        Win32.SendWinShortcut('B');
+        var timer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Normal, _host.Dispatcher)
+        { Interval = TimeSpan.FromMilliseconds(250) };
+        timer.Tick += (_, _) => { timer.Stop(); Win32.SendKey(0x0D); };
+        timer.Start();
+    }
 
     private static void OpenTaskManager() => Open("taskmgr.exe");
 

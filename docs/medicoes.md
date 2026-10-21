@@ -65,6 +65,10 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
   - O volume lido pelo Core Audio a cada 2 s, recriando os objetos COM, custava 0,30% de CPU ociosa. Guardando o ponteiro do alto-falante (renovado a cada ~20 s), caiu para 0,14%. Sem o volume, a CPU fica em 0,09%.
   - Início: 1,4 a 2,5 s nesta sessão, mas também 1,8 a 2,0 s com as ilhas desligadas. O PC estava mais carregado (CPU em ~55%); em sessões anteriores, a mesma medição dava 0,8 s.
 
+- **Seta ^ da bandeja**: três cliques reais com o mouse abriram o painel nativo de ícones ocultos, com Aurora Desk, Claude, Discord, Segurança do Windows e Remover hardware. Ele fechou com Esc nas três vezes (3 de 3).
+  - Investigação antes de escolher esse caminho: `ITrayNotify` (CLSID 25DEAD04…) registra o callback sem erro, mas não entrega nenhum item no Windows 11 26200.
+  - A árvore de UI Automation da `Shell_TrayWnd` oculta tem 0 elementos.
+
 Não verificado (ou verificado só parcialmente):
 
 - Clique real com o mouse nos itens das ilhas, como abrir o Gerenciador de Tarefas e rolar o volume. Os atalhos Win+A e Win+N foram testados enviando as teclas.

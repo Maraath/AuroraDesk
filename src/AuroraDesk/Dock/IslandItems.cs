@@ -137,6 +137,23 @@ internal sealed class GlyphItem(string key, MeasureSpec spec, Func<Measure?, str
     public override void Wheel(int delta) => OnWheel?.Invoke(delta);
 }
 
+/// <summary>Botão só com ícone (ex.: a seta ^ dos ícones ocultos da bandeja).</summary>
+internal sealed class IconButtonItem(string key, string glyph, string tooltip, Action click) : IslandItem(key)
+{
+    public override bool Clickable => true;
+    public override string? Tooltip => tooltip;
+
+    public override double Width(IslandContext ctx) => Math.Ceiling(ctx.Text(glyph, 14, ctx.Theme.TextSecondary, glyph: true).Width);
+
+    public override void Draw(DrawingContext dc, IslandContext ctx, Rect area)
+    {
+        var g = ctx.Text(glyph, 14, ctx.Theme.TextSecondary, glyph: true);
+        dc.DrawText(g, new Point(area.X, area.Y + (area.Height - g.Height) / 2));
+    }
+
+    public override void Click() => click();
+}
+
 /// <summary>Relógio de duas linhas: hora e data curta ("qua, 21 out").</summary>
 internal sealed class ClockItem(Action click) : IslandItem("relogio")
 {

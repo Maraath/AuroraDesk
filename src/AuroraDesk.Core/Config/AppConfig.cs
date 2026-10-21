@@ -97,6 +97,12 @@ public sealed class DockConfig
     /// <summary>Itens da ilha direita, na ordem: aurora, conexao, volume, bateria, relogio.</summary>
     public List<string> RightItems { get; set; } = ["aurora", "conexao", "volume", "bateria", "relogio"];
 
+    /// <summary>
+    /// Seta ^ na ilha direita que abre os ícones dos outros apps da bandeja (Discord, Steam...).
+    /// Usa o painel nativo do Windows, então clique esquerdo, direito e menus funcionam como sempre.
+    /// </summary>
+    public bool TrayOverflow { get; set; } = true;
+
     public static readonly string[] AllLeftItems = ["cpu", "ram", "disco", "rede", "clima", "bateria"];
     public static readonly string[] AllRightItems = ["aurora", "conexao", "volume", "bateria", "relogio"];
 }

@@ -239,6 +239,8 @@ internal sealed class SettingsWindow : Window
             new TextBlock { Text = "Ilha esquerda", Margin = new Thickness(0, 8, 0, 0) },
             Checks(DockConfig.AllLeftItems, d.LeftItems, [("cpu", "CPU"), ("ram", "RAM"), ("disco", "Disco C:"), ("rede", "Rede"), ("clima", "Clima"), ("bateria", "Bateria")]),
             new TextBlock { Text = "Ilha direita", Margin = new Thickness(0, 8, 0, 0) },
+            Ui.Row("Seta ^ com os ícones dos outros apps", Ui.Toggle(d.TrayOverflow, v => Apply(() => d.TrayOverflow = v)),
+                "Abre o painel de ícones da bandeja do próprio Windows (Discord, Steam...), com clique direito e menus normais."),
             Checks(DockConfig.AllRightItems, d.RightItems, [("aurora", "Aurora Desk"), ("conexao", "Wi-Fi/rede"), ("volume", "Volume"), ("bateria", "Bateria"), ("relogio", "Relógio")]),
             Ui.Note("Clique na CPU ou na RAM para abrir o Gerenciador de Tarefas, nos ícones do sistema para abrir as configurações rápidas do Windows e no relógio para ver as notificações e o calendário. Role o mouse sobre o volume para ajustá-lo. O clima só aparece com o clima ligado (Geral).")));
 

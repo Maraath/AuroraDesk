@@ -162,6 +162,17 @@ internal static unsafe partial class Win32
         SendInput(4, inputs, sizeof(INPUT));
     }
 
+    /// <summary>Pressiona e solta uma tecla (código virtual).</summary>
+    public static void SendKey(ushort vk)
+    {
+        const int INPUT_KEYBOARD = 1;
+        const uint KEYEVENTF_KEYUP = 2;
+        var inputs = stackalloc INPUT[2];
+        inputs[0] = new INPUT { type = INPUT_KEYBOARD, wVk = vk };
+        inputs[1] = new INPUT { type = INPUT_KEYBOARD, wVk = vk, dwFlags = KEYEVENTF_KEYUP };
+        SendInput(2, inputs, sizeof(INPUT));
+    }
+
     [LibraryImport("shcore.dll")]
     public static partial int GetDpiForMonitor(nint monitor, int type, out uint dpiX, out uint dpiY);
 
