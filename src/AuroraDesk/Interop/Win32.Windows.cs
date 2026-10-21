@@ -162,6 +162,21 @@ internal static unsafe partial class Win32
         SendInput(4, inputs, sizeof(INPUT));
     }
 
+    /// <summary>Digita um texto na janela em foco (caracteres Unicode, independente do layout do teclado).</summary>
+    public static void SendText(string text)
+    {
+        const int INPUT_KEYBOARD = 1;
+        const uint KEYEVENTF_KEYUP = 2, KEYEVENTF_UNICODE = 4;
+        if (text.Length == 0) return;
+        var inputs = new INPUT[text.Length * 2];
+        for (int i = 0; i < text.Length; i++)
+        {
+            inputs[2 * i] = new INPUT { type = INPUT_KEYBOARD, wScan = text[i], dwFlags = KEYEVENTF_UNICODE };
+            inputs[2 * i + 1] = new INPUT { type = INPUT_KEYBOARD, wScan = text[i], dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP };
+        }
+        fixed (INPUT* p = inputs) SendInput((uint)inputs.Length, p, sizeof(INPUT));
+    }
+
     /// <summary>Pressiona e solta uma tecla (código virtual).</summary>
     public static void SendKey(ushort vk)
     {

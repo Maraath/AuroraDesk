@@ -181,6 +181,31 @@ internal sealed partial class DockManager
 
     private static void QuickSettings() => Win32.SendWinShortcut('A');
 
+    private Search.SearchWindow? _search;
+
+    /// <summary>Abre (ou fecha, se já aberta) a pesquisa do Aurora logo acima do painel do dock.</summary>
+    public void ToggleSearch()
+    {
+        if (_search is not null) { _search.Close(); return; }
+        if (_window is null) return;
+        Win32.GetWindowRect(_window.Handle, out var r);
+        double scale = Win32.MonitorScale(TargetMonitor());
+        var s = _window.Surface;
+        bool bottom = Config.Edge != "superior";
+        int gap = (int)Math.Round(12 * scale);
+        // Borda do painel do dock voltada para o meio da tela.
+        int panelEdge = bottom
+            ? r.Bottom - (int)Math.Round((s.EdgeGap + s.PanelThickness) * scale)
+            : r.Top + (int)Math.Round((s.EdgeGap + s.PanelThickness) * scale);
+        _search = new Search.SearchWindow(_host.Themes, (path, px) => _icons.Get(path, px), Config.SearchEngine);
+        _search.Closed += (_, _) =>
+        {
+            _search = null;
+            _host.Trimmer.Schedule(TimeSpan.FromSeconds(3));
+        };
+        _search.ShowNearDock((r.Left + r.Right) / 2, bottom ? panelEdge - gap : panelEdge + gap, bottom, scale);
+    }
+
     /// <summary>
     /// Abre o painel nativo de ícones ocultos da bandeja: Win+B põe o foco na seta da bandeja do
     /// Windows e Enter a abre. Os ícones continuam sendo do Windows (clique direito, menus e

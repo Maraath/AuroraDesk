@@ -73,7 +73,14 @@ O app tem uma instância só. Uma segunda execução abre as configurações da 
   - O clique direito mostra janelas, fechar, fixar/desafixar, abrir local do arquivo e as opções do dock.
 - **Dock em três ilhas** (padrão, nas bordas inferior e superior):
   - **Esquerda, estatísticas**: CPU e RAM com barrinha de uso, rede (download), clima da sua cidade e, opcionalmente, disco C: e bateria. Clicar na CPU ou na RAM abre o Gerenciador de Tarefas.
-  - **Centro**: a **lupa de pesquisa**, que abre a pesquisa do Windows (Win+S) e pode ser desligada em Configurações → Dock, seguida dos apps.
+  - **Centro**: a **lupa de pesquisa**, seguida dos apps. A lupa abre a **pesquisa do Aurora**, um painel com as cores do tema logo acima do dock, sem mostrar a barra do Windows. Ela procura:
+    - os apps do menu Iniciar (programas e Store, com ícones);
+    - as configurações do Windows mais usadas (Wi-Fi, Bluetooth, Tela, Som...);
+    - a web, no navegador padrão (Google, Bing ou DuckDuckGo).
+
+    A busca ignora acentos e pontuação ("configuracoes", "wifi") e entende iniciais ("vsc" → Visual Studio Code). As setas navegam, Enter abre, Esc ou um clique fora fecha.
+
+    Para arquivos, o último resultado leva o termo para a pesquisa do Windows, que mostra a própria barra enquanto está aberta. O painel é criado ao abrir e descartado ao fechar. A lista de apps fica guardada por 10 minutos (só nomes).
   - **Direita, bandeja**:
     - o **ícone do Aurora Desk** (o mesmo menu da bandeja, que some junto com a barra do Windows);
     - Wi-Fi ou cabo e volume (role o mouse para ajustar);

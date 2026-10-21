@@ -183,6 +183,73 @@ internal static unsafe partial class ShellInterop
         }
     }
 
+    private static readonly Guid FOLDERID_AppsFolder = new("1e87508d-89c2-42f0-8a7e-645a0f50ca58");
+    private static readonly Guid IID_IShellItem = new("43826d1e-e718-42ee-bc55-a1e261c37bfe");
+    private static readonly Guid BHID_EnumItems = new("94f60519-2850-4924-aa5a-d15e84868039");
+    private static readonly Guid IID_IEnumShellItems = new("70629033-e363-4a28-a567-0db78006e6d7");
+
+    [LibraryImport("shell32.dll")]
+    private static partial int SHGetKnownFolderItem(in Guid folder, int flags, nint token, in Guid riid, out nint ppv);
+
+    [LibraryImport("ole32.dll")]
+    private static partial void CoTaskMemFree(nint p);
+
+    [LibraryImport("ole32.dll")]
+    private static partial int CoInitializeEx(nint reserved, uint coinit);
+
+    /// <summary>
+    /// Todos os apps do menu Iniciar (programas comuns e da Store), como a pasta shell:AppsFolder:
+    /// nome de exibição e nome de análise (AppUserModelID ou caminho), para abrir com
+    /// "shell:AppsFolder\&lt;nome&gt;". Rodar numa thread MTA (ex.: Task.Run).
+    /// </summary>
+    public static List<(string Name, string ParsingName)> ListStartApps()
+    {
+        var result = new List<(string, string)>(256);
+        CoInitializeEx(0, 0); // MTA na thread do pool; inofensivo se já iniciado
+        if (SHGetKnownFolderItem(FOLDERID_AppsFolder, 0, 0, IID_IShellItem, out nint folder) != 0) return result;
+        nint enumerator = 0;
+        try
+        {
+            fixed (Guid* bhid = &BHID_EnumItems)
+            fixed (Guid* iid = &IID_IEnumShellItems)
+                // IShellItem::BindToHandler (3)
+                if (((delegate* unmanaged[Stdcall]<nint, nint, Guid*, Guid*, nint*, int>)(*(void***)folder)[3])(folder, 0, bhid, iid, &enumerator) != 0)
+                    return result;
+
+            nint item;
+            uint fetched;
+            // IEnumShellItems::Next (3)
+            while (((delegate* unmanaged[Stdcall]<nint, uint, nint*, uint*, int>)(*(void***)enumerator)[3])(enumerator, 1, &item, &fetched) == 0 && fetched == 1)
+            {
+                try
+                {
+                    string? name = DisplayName(item, 0);                         // SIGDN_NORMALDISPLAY
+                    string? parsing = DisplayName(item, unchecked((int)0x80018001)); // SIGDN_PARENTRELATIVEPARSING
+                    if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(parsing)) result.Add((name, parsing));
+                }
+                finally
+                {
+                    Release(item);
+                }
+            }
+        }
+        finally
+        {
+            if (enumerator != 0) Release(enumerator);
+            Release(folder);
+        }
+        return result;
+    }
+
+    private static string? DisplayName(nint item, int sigdn)
+    {
+        nint text = 0;
+        // IShellItem::GetDisplayName (5)
+        if (((delegate* unmanaged[Stdcall]<nint, int, nint*, int>)(*(void***)item)[5])(item, sigdn, &text) != 0 || text == 0) return null;
+        try { return Marshal.PtrToStringUni(text); }
+        finally { CoTaskMemFree(text); }
+    }
+
     /// <summary>AppUserModelID explícito de uma janela (UWP e apps que o definem).</summary>
     public static string? WindowAppId(nint hwnd)
     {

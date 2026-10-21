@@ -215,7 +215,8 @@ internal sealed class SettingsWindow : Window
             Ui.Row("Reservar espaço com a barra do Windows oculta", Ui.Toggle(d.ReserveWhenTaskbarHidden, v => Apply(() => d.ReserveWhenTaskbarHidden = v)), "Padrão: ligado. O dock assume o lugar da barra e as janelas maximizadas param acima dele."),
             Ui.Row("Ocultar automaticamente", Ui.Toggle(d.AutoHide, v => Apply(() => d.AutoHide = v)), "Some quando o mouse sai; volta ao encostar na borda. Não vale enquanto houver espaço reservado."),
             Ui.Row("Mostrar apps abertos não fixados", Ui.Toggle(d.ShowRunning, v => Apply(() => d.ShowRunning = v))),
-            Ui.Row("Botão de pesquisa", Ui.Toggle(d.SearchButton, v => Apply(() => d.SearchButton = v)), "Lupa no início do dock que abre a pesquisa do Windows (Win+S).")));
+            Ui.Row("Botão de pesquisa", Ui.Toggle(d.SearchButton, v => Apply(() => d.SearchButton = v)), "Lupa no início do dock: pesquisa apps, configurações e a web num painel do Aurora, acima do dock."),
+            Ui.Row("Buscador da web", Ui.Combo([("Google", "google"), ("Bing", "bing"), ("DuckDuckGo", "duckduckgo")], d.SearchEngine, v => { d.SearchEngine = v; _host.SaveConfig(); }))));
 
         page.Children.Add(Ui.Section("Três ilhas"));
         WrapPanel Checks(string[] all, List<string> selected, (string Key, string Label)[] labels)

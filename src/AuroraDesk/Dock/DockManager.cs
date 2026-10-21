@@ -341,7 +341,7 @@ internal sealed partial class DockManager : IDisposable
     {
         if (index < 0 || index >= _entries.Count) return;
         var e = _entries[index];
-        if (e.IsSearch) { Win32.SendWinShortcut('S'); return; } // pesquisa do Windows
+        if (e.IsSearch) { ToggleSearch(); return; } // pesquisa do Aurora, acima do dock
         if (button == MouseButton.Middle || !e.IsRunning) { Launch(e); return; }
 
         var windows = e.Windows;
@@ -443,7 +443,8 @@ internal sealed partial class DockManager : IDisposable
         var menu = new NativeMenu();
         if (index >= 0 && index < _entries.Count && _entries[index].IsSearch)
         {
-            menu.Item("Pesquisar", () => Win32.SendWinShortcut('S'))
+            menu.Item("Pesquisar", ToggleSearch)
+                .Item("Abrir a pesquisa do Windows", () => Win32.SendWinShortcut('S'))
                 .Item("Ocultar o botão de pesquisa", () => { Config.SearchButton = false; Changed(); })
                 .Separator();
         }
