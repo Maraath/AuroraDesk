@@ -99,6 +99,10 @@ public sealed class WeatherMeasure(MeasureSpec spec, WeatherSource source) : Mea
     public override bool IsText => _field == "descricao";
     public override TimeSpan DefaultInterval => TimeSpan.FromMinutes(1);
 
+    /// <summary>Enquanto a primeira consulta não chega, relê a cada 5 s para mostrar o clima logo.</summary>
+    public override DateTimeOffset NextDue(DateTimeOffset now, TimeSpan interval) =>
+        source.Enabled && source.Current is null ? now + TimeSpan.FromSeconds(5) : now + interval;
+
     protected override void Read(SampleContext context)
     {
         source.RefreshIfStale(context.Now);

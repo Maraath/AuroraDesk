@@ -131,6 +131,16 @@ public sealed class ProfileTests : IDisposable
     }
 
     [Fact]
+    public void ClimaSemDadosReleLogo()
+    {
+        var now = DateTimeOffset.Now;
+        var ligado = new WeatherMeasure(new MeasureSpec("clima"), new WeatherSource { Enabled = true });
+        Assert.Equal(now.AddSeconds(5), ligado.NextDue(now, TimeSpan.FromMinutes(1)));
+        var desligado = new WeatherMeasure(new MeasureSpec("clima"), new WeatherSource { Enabled = false });
+        Assert.Equal(now.AddMinutes(1), desligado.NextDue(now, TimeSpan.FromMinutes(1)));
+    }
+
+    [Fact]
     public void ClimaDesligadoNaoUsaRede()
     {
         var source = new WeatherSource { Enabled = false };

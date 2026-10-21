@@ -46,9 +46,12 @@ internal sealed class WidgetManager : IDisposable
 
     public void Start()
     {
+        // Copia os exemplos que faltam (inclusive os que chegaram numa versão nova, como "clima").
+        // Nunca sobrescreve: um skin editado pelo usuário fica como está.
+        int installed = SkinLibrary.InstallSamples(Folder);
+        if (installed > 0 && Config.FirstRunDone) Log.Info($"{installed} arquivo(s) de exemplo novo(s) instalado(s)");
         if (!Config.FirstRunDone)
         {
-            SkinLibrary.InstallSamples(Folder);
             foreach (var skin in SkinLibrary.DefaultEnabled)
                 Config.Widgets.Add(new WidgetInstance { Skin = skin });
             Config.FirstRunDone = true;
