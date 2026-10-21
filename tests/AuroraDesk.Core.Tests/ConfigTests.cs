@@ -44,6 +44,29 @@ public sealed class ConfigTests : IDisposable
     }
 
     [Fact]
+    public void ReservaDoDockSegueABarraDoWindows()
+    {
+        var d = new DockConfig();
+        Assert.False(d.EffectiveReserve(taskbarHidden: false)); // barra visível: flutuante por padrão
+        Assert.True(d.EffectiveReserve(taskbarHidden: true));   // barra oculta: reserva por padrão
+
+        d.SetReserve(taskbarHidden: true, value: false);        // muda só o modo atual
+        Assert.False(d.EffectiveReserve(true));
+        Assert.False(d.ReserveSpace);
+        d.SetReserve(taskbarHidden: false, value: true);
+        Assert.True(d.EffectiveReserve(false));
+        Assert.False(d.EffectiveReserve(true));
+    }
+
+    [Fact]
+    public void ConfigAntigaGanhaReservaComBarraOculta()
+    {
+        // config.json gravado antes da opção existir: o padrão novo (ligado) vale.
+        var config = ConfigStore.Deserialize("""{ "dock": { "reserveSpace": false } }""")!;
+        Assert.True(config.Dock.ReserveWhenTaskbarHidden);
+    }
+
+    [Fact]
     public void AceitaComentariosEVirgulaFinal()
     {
         string path = Path.Combine(_dir, "config.json");

@@ -97,7 +97,10 @@ internal sealed class DockManager : IDisposable
         _layoutKey = "";
     }
 
-    private bool AutoHideActive => Config.AutoHide && !Config.ReserveSpace && _window is { UsesBackdrop: false };
+    private bool AutoHideActive => Config.AutoHide && !Reserve && _window is { UsesBackdrop: false };
+
+    /// <summary>Reserva de espaço valendo agora (depende de a barra do Windows estar oculta).</summary>
+    private bool Reserve => Config.EffectiveReserve(_host.Taskbar.IsActive);
 
     private void HideNow()
     {
@@ -161,7 +164,7 @@ internal sealed class DockManager : IDisposable
         _window.Surface.SetEntries(entries);
 
         // Só reposiciona a janela quando o comprimento muda.
-        string key = $"{entries.Count}|{entries.Count(e => e.IsSeparator)}|{Config.Edge}|{Config.IconSize}|{Config.Monitor}|{Config.ReserveSpace}";
+        string key = $"{entries.Count}|{entries.Count(e => e.IsSeparator)}|{Config.Edge}|{Config.IconSize}|{Config.Monitor}|{Reserve}";
         if (key != _layoutKey) { _layoutKey = key; Place(); }
     }
 
@@ -276,14 +279,14 @@ internal sealed class DockManager : IDisposable
         bool backdrop = _window.UsesBackdrop;
         s.Zoom = Config.Zoom && !backdrop ? Math.Clamp(Config.ZoomFactor, 1, 2) : 1;
         s.ShowLabels = Config.ShowLabels && !backdrop;
-        s.EdgeGap = backdrop ? 0 : (Config.ReserveSpace ? 4 : 8);
+        s.EdgeGap = backdrop ? 0 : (Reserve ? 4 : 8);
         if (!AutoHideActive) s.SetHidden(false, animate: false);
     }
 
     private void Place()
     {
         if (_window is null) return;
-        _window.Place(TargetMonitor(), ParseEdge(Config.Edge), Config.ReserveSpace);
+        _window.Place(TargetMonitor(), ParseEdge(Config.Edge), Reserve);
     }
 
     /// <summary>Reaplica a configuração (chamado pelo menu e pelas configurações).</summary>
@@ -312,6 +315,7 @@ internal sealed class DockManager : IDisposable
     private bool OnControlMessage(int msg, nint wParam, nint lParam)
     {
         const int SPI_SETWORKAREA = 0x2F; // a área de trabalho mudou (ex.: barra do Windows oculta/mostrada)
+        if (msg == ControlWindow.TaskbarCreatedMessage) _window?.OnShellRestarted();
         if (msg == Win32.WM_DISPLAYCHANGE || msg == ControlWindow.TaskbarCreatedMessage || (msg == Win32.WM_SETTINGCHANGE && wParam == SPI_SETWORKAREA))
             _host.Dispatcher.BeginInvoke(DispatcherPriority.Background, () => { _layoutKey = ""; Rebuild(); });
         return false;
@@ -494,8 +498,8 @@ internal sealed class DockManager : IDisposable
             .Submenu("Monitor", monitors)
             .Submenu("Tamanho dos ícones", size)
             .Submenu("Fundo", backdrop)
-            .Item("Reservar espaço na tela", () => Set(() => Config.ReserveSpace = !Config.ReserveSpace), isChecked: Config.ReserveSpace)
-            .Item("Ocultar automaticamente", () => Set(() => Config.AutoHide = !Config.AutoHide), isChecked: Config.AutoHide, enabled: !Config.ReserveSpace)
+            .Item(_host.Taskbar.IsActive ? "Reservar espaço na tela (barra do Windows oculta)" : "Reservar espaço na tela", () => Set(() => Config.SetReserve(_host.Taskbar.IsActive, !Reserve)), isChecked: Reserve)
+            .Item("Ocultar automaticamente", () => Set(() => Config.AutoHide = !Config.AutoHide), isChecked: Config.AutoHide, enabled: !Reserve)
             .Item("Ampliar ao passar o mouse", () => Set(() => Config.Zoom = !Config.Zoom), isChecked: Config.Zoom)
             .Item("Mostrar nomes ao passar o mouse", () => Set(() => Config.ShowLabels = !Config.ShowLabels), isChecked: Config.ShowLabels)
             .Item("Mostrar apps abertos não fixados", () => Set(() => Config.ShowRunning = !Config.ShowRunning), isChecked: Config.ShowRunning);

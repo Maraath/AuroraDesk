@@ -65,6 +65,7 @@ internal sealed class AppHost : IDisposable
     {
         Config.HideTaskbar = hide;
         if (hide) Taskbar.Hide(); else Taskbar.Restore();
+        Dock.ApplyConfig(); // a reserva de espaço do dock depende da barra estar oculta
         SaveConfig();
     }
 
@@ -102,12 +103,13 @@ internal sealed class AppHost : IDisposable
         _fontWatcher = new DebouncedWatcher(Paths.Fonts, "*.*", false, Dispatcher, delayMs: 800);
         _fontWatcher.Changed += _ => Themes.ReloadFonts();
 
-        Widgets.Start();
-        Dock.Start();
         // Com a regra ligada, a barra do Windows some enquanto o app estiver aberto. Se uma
         // execução anterior caiu com a barra oculta e a regra foi desligada, devolve a barra.
+        // Vem antes do dock: a reserva de espaço dele depende da barra estar oculta.
         if (Config.HideTaskbar) Taskbar.Hide();
         else Taskbar.Restore();
+        Widgets.Start();
+        Dock.Start();
 
         var startedAt = Process.GetCurrentProcess().StartTime;
         // Medido quando a fila de interface esvazia, isto é, com tudo já visível.
@@ -230,9 +232,9 @@ internal sealed class AppHost : IDisposable
         if (Config.Dock.ReserveSpace)
         {
             Config.Dock.ReserveSpace = false;
-            Dock.ApplyConfig(); // devolve o espaço reservado (AppBar)
             count++;
         }
+        Dock.ApplyConfig(); // devolve o espaço reservado (AppBar), se houver
         Log.Info($"Restaurar original: {count} item(ns)");
         return count;
     }

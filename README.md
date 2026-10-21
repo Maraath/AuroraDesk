@@ -180,7 +180,10 @@ Com a opção **"Ocultar a barra de tarefas do Windows enquanto o Aurora Desk es
 - Se o app cair ou for encerrado pelo Gerenciador de Tarefas ("Finalizar tarefa"), o processo vigia `AuroraDesk.exe --vigia` devolve a barra em menos de 1 s.
 - Com a barra oculta, o ícone da bandeja do Aurora Desk some junto. Abra as configurações pelo **clique direito no dock** ("Configurações do Aurora Desk" e "Sair") ou executando o `AuroraDesk.exe` de novo.
 - Os atalhos do Windows continuam funcionando: Win (Iniciar), Win+A (configurações rápidas) e Win+N (notificações e calendário).
-- O dock flutua sobre o rodapé das janelas maximizadas. Para que elas parem acima dele, ligue **Dock → Reservar espaço na tela**.
+- Com a barra oculta, o dock **reserva o espaço dela** por padrão: as janelas maximizadas param logo acima do dock, como fariam com a barra.
+  - Desligue em Configurações → Dock → "Reservar espaço com a barra do Windows oculta", ou pelo clique direito no dock.
+  - Com a barra do Windows visível, vale a opção normal "Reservar espaço na tela" (padrão: flutuante).
+  - A reserva é devolvida ao fechar e refeita se o Explorer reiniciar.
 - Caso extremo: se o app e o vigia forem encerrados juntos ("Finalizar árvore de processos"), a barra fica oculta até você abrir o Aurora Desk de novo (que a gerencia) ou usar **Restaurar original**.
 
 ## Perfis e Rainmeter
@@ -239,7 +242,7 @@ O script mostra Private Bytes, Working Set (total, pico e privado), CPU média o
   - Os números estão em [docs/medicoes.md](docs/medicoes.md).
 - **Liberação de memória**: 20 s depois de iniciar e ao fechar as configurações, o app faz um GC compactando e chama `SetProcessWorkingSetSize(-1,-1)`, no máximo a cada 5 min. Isso derruba o Working Set (ex.: 100 → 16 MB) sem mudar o Private Bytes; as páginas voltam sob demanda.
 - **Janela de configurações** com o tema Fluent do WPF (`ThemeMode.Dark`, que o .NET 10 ainda marca como experimental), montada em código e descartada ao fechar. Ela custa ~20 MB enquanto aberta; ao fechar, ~7 MB de bibliotecas continuam carregadas.
-- **Dock reservando espaço** (AppBar) é opcional. O padrão é flutuante, no rodapé da tela.
+- **Dock reservando espaço** (AppBar): com a barra do Windows oculta, vem ligado por padrão (o dock faz o papel dela). Com a barra visível, o padrão é flutuante. São duas opções separadas, para cada modo lembrar a sua escolha.
 - **Barra do Windows oculta enquanto o app está aberto** (pedido do usuário; dá para desligar). O app:
   - grava o estado original em `backup\barra-de-tarefas.json`;
   - liga "ocultar automaticamente", para as janelas maximizadas usarem a tela toda, e esconde a janela da barra;

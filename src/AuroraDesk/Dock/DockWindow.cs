@@ -130,6 +130,9 @@ internal sealed unsafe class DockWindow : Window
         return data.rc;
     }
 
+    /// <summary>O Explorer reiniciou e esqueceu as AppBars: a próxima reserva registra de novo.</summary>
+    public void OnShellRestarted() => _appBarRegistered = false;
+
     /// <summary>Devolve o espaço reservado (sempre chamado ao sair ou ao voltar para flutuante).</summary>
     public void RemoveAppBar()
     {

@@ -58,6 +58,21 @@ public sealed class DockConfig
     public string Edge { get; set; } = "inferior";
     /// <summary>true = reserva espaço na tela (AppBar); false = flutuante.</summary>
     public bool ReserveSpace { get; set; }
+    /// <summary>
+    /// Reservar espaço quando a barra do Windows estiver oculta pelo app (padrão: sim): o dock
+    /// assume o papel da barra e as janelas maximizadas param acima dele.
+    /// </summary>
+    public bool ReserveWhenTaskbarHidden { get; set; } = true;
+
+    /// <summary>Reserva efetiva: com a barra do Windows oculta vale <see cref="ReserveWhenTaskbarHidden"/>.</summary>
+    public bool EffectiveReserve(bool taskbarHidden) => taskbarHidden ? ReserveWhenTaskbarHidden : ReserveSpace;
+
+    /// <summary>Muda a opção que está valendo agora (a do modo atual da barra).</summary>
+    public void SetReserve(bool taskbarHidden, bool value)
+    {
+        if (taskbarHidden) ReserveWhenTaskbarHidden = value;
+        else ReserveSpace = value;
+    }
     public bool AutoHide { get; set; }
     public string? Monitor { get; set; }
     public int IconSize { get; set; } = 44;

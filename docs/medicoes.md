@@ -55,6 +55,10 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
   - Reiniciar o Explorer com o app aberto: a barra nova é ocultada de novo assim que o Explorer termina de montá-la (~12 s neste PC). O teste encontrou um erro no temporizador desse passo, que já foi corrigido.
   - O teste de Win+D/Explorer com a barra oculta também passou (7 de 7).
   - Consumo: app 59,4 MB e vigia 5,8 MB de Private Bytes.
+- **Dock reservando o espaço da barra oculta** (mesmo `tools\teste-barra.ps1`):
+  - App aberto: área de trabalho até y=1015; as janelas maximizadas param acima do dock (conferido em captura).
+  - Fechar ou encerrar à força: área de trabalho volta a y=1032.
+  - O teste encontrou um defeito: depois de reiniciar o Explorer a reserva se perdia (y=1080), porque o novo Explorer esquece as AppBars. Corrigido: o dock se registra de novo e a área volta a y=1015.
 
 Não verificado (ou verificado só parcialmente):
 

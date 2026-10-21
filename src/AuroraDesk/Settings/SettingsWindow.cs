@@ -211,8 +211,9 @@ internal sealed class SettingsWindow : Window
             Ui.Row("Mostrar o dock", Ui.Toggle(d.Enabled, v => _host.Dock.SetEnabled(v))),
             Ui.Row("Posição", Ui.Combo([("Inferior", "inferior"), ("Superior", "superior"), ("Esquerda", "esquerda"), ("Direita", "direita")], d.Edge, v => Apply(() => d.Edge = v))),
             Ui.Row("Monitor", Ui.Combo(MonitorItems(), d.Monitor ?? "", v => Apply(() => d.Monitor = v.Length == 0 ? null : v))),
-            Ui.Row("Reservar espaço na tela", Ui.Toggle(d.ReserveSpace, v => Apply(() => d.ReserveSpace = v)), "Janelas maximizadas não ficam por baixo do dock (como a barra de tarefas). A reserva é desfeita ao sair."),
-            Ui.Row("Ocultar automaticamente", Ui.Toggle(d.AutoHide, v => Apply(() => d.AutoHide = v)), "Some quando o mouse sai; volta ao encostar na borda. Não vale com espaço reservado."),
+            Ui.Row("Reservar espaço na tela", Ui.Toggle(d.ReserveSpace, v => Apply(() => d.ReserveSpace = v)), "Com a barra do Windows visível. Janelas maximizadas param acima do dock. A reserva é desfeita ao sair."),
+            Ui.Row("Reservar espaço com a barra do Windows oculta", Ui.Toggle(d.ReserveWhenTaskbarHidden, v => Apply(() => d.ReserveWhenTaskbarHidden = v)), "Padrão: ligado. O dock assume o lugar da barra e as janelas maximizadas param acima dele."),
+            Ui.Row("Ocultar automaticamente", Ui.Toggle(d.AutoHide, v => Apply(() => d.AutoHide = v)), "Some quando o mouse sai; volta ao encostar na borda. Não vale enquanto houver espaço reservado."),
             Ui.Row("Mostrar apps abertos não fixados", Ui.Toggle(d.ShowRunning, v => Apply(() => d.ShowRunning = v)))));
 
         page.Children.Add(Ui.Section("Aparência"));
