@@ -138,6 +138,15 @@ internal sealed class AppHost : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// Pausa as medidas por "oculto" só quando ninguém as usa: nem widgets visíveis, nem as
+    /// ilhas do dock. Chamado quando widgets ou o dock mudam.
+    /// </summary>
+    public void UpdateMeasureDemand() => State?.SetHidden(!Widgets.NeedsMeasures && !Dock.NeedsMeasures);
+
+    /// <summary>Menu principal (o da bandeja). Também aberto pelo ícone do Aurora Desk no dock.</summary>
+    public void ShowMainMenu() => ShowTrayMenu();
+
     private void ShowTrayMenu()
     {
         var themeMenu = new NativeMenu();

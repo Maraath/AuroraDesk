@@ -133,6 +133,35 @@ internal static unsafe partial class Win32
         }
     }
 
+    // ---------- teclado (atalhos do Windows: Win+A, Win+N) ----------
+    [StructLayout(LayoutKind.Explicit, Size = 40)]
+    private struct INPUT
+    {
+        [FieldOffset(0)] public int type;
+        [FieldOffset(8)] public ushort wVk;
+        [FieldOffset(10)] public ushort wScan;
+        [FieldOffset(12)] public uint dwFlags;
+        [FieldOffset(16)] public uint time;
+        [FieldOffset(24)] public nint dwExtraInfo;
+    }
+
+    [LibraryImport("user32.dll")]
+    private static partial uint SendInput(uint count, INPUT* inputs, int size);
+
+    /// <summary>Pressiona Win + <paramref name="key"/> (ex.: 'A' configurações rápidas, 'N' notificações).</summary>
+    public static void SendWinShortcut(char key)
+    {
+        const int INPUT_KEYBOARD = 1;
+        const uint KEYEVENTF_KEYUP = 2;
+        const ushort VK_LWIN = 0x5B;
+        var inputs = stackalloc INPUT[4];
+        inputs[0] = new INPUT { type = INPUT_KEYBOARD, wVk = VK_LWIN };
+        inputs[1] = new INPUT { type = INPUT_KEYBOARD, wVk = key };
+        inputs[2] = new INPUT { type = INPUT_KEYBOARD, wVk = key, dwFlags = KEYEVENTF_KEYUP };
+        inputs[3] = new INPUT { type = INPUT_KEYBOARD, wVk = VK_LWIN, dwFlags = KEYEVENTF_KEYUP };
+        SendInput(4, inputs, sizeof(INPUT));
+    }
+
     [LibraryImport("shcore.dll")]
     public static partial int GetDpiForMonitor(nint monitor, int type, out uint dpiX, out uint dpiY);
 

@@ -42,6 +42,9 @@ internal sealed class WidgetManager : IDisposable
     private AppConfig Config => _host.Config;
     public string Folder => _host.Paths.Widgets;
     public bool Visible => Config.WidgetsVisible;
+
+    /// <summary>Há widget aberto e visível (precisa de medidas).</summary>
+    public bool NeedsMeasures => Config.WidgetsVisible && _running.Count > 0;
     public int Count => _running.Count;
 
     public void Start()
@@ -69,7 +72,7 @@ internal sealed class WidgetManager : IDisposable
         if (Config.WidgetsVisible)
             foreach (var instance in Config.Widgets.Where(w => w.Enabled))
                 Open(instance);
-        _host.State?.SetHidden(!Config.WidgetsVisible || _running.Count == 0);
+        _host.UpdateMeasureDemand();
         WatchDesktopIfActive();
     }
 
@@ -115,7 +118,7 @@ internal sealed class WidgetManager : IDisposable
         instance.Enabled = enabled;
         if (enabled && Config.WidgetsVisible) Open(instance);
         else if (!enabled) Close(instance.Id);
-        _host.State?.SetHidden(!Config.WidgetsVisible || _running.Count == 0);
+        _host.UpdateMeasureDemand();
         RequestSave();
     }
 
@@ -132,7 +135,7 @@ internal sealed class WidgetManager : IDisposable
             foreach (var instance in Config.Widgets.Where(w => w.Enabled)) Open(instance);
         else
             foreach (var id in _running.Keys.ToList()) Close(id);
-        _host.State?.SetHidden(!visible || _running.Count == 0);
+        _host.UpdateMeasureDemand();
         RequestSave();
     }
 

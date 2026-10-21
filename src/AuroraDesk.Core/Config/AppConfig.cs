@@ -84,6 +84,21 @@ public sealed class DockConfig
     /// <summary>"nenhum", "acrilico" ou "mica".</summary>
     public string Backdrop { get; set; } = "nenhum";
     public List<DockItem> Items { get; set; } = [];
+
+    /// <summary>
+    /// Estilo "três ilhas": widgets à esquerda, apps no centro, bandeja e relógio à direita
+    /// (só nas bordas inferior e superior). Falso = só a ilha dos apps.
+    /// </summary>
+    public bool Islands { get; set; } = true;
+
+    /// <summary>Itens da ilha esquerda, na ordem: cpu, ram, disco, rede, clima, bateria.</summary>
+    public List<string> LeftItems { get; set; } = ["cpu", "ram", "rede", "clima"];
+
+    /// <summary>Itens da ilha direita, na ordem: aurora, conexao, volume, bateria, relogio.</summary>
+    public List<string> RightItems { get; set; } = ["aurora", "conexao", "volume", "bateria", "relogio"];
+
+    public static readonly string[] AllLeftItems = ["cpu", "ram", "disco", "rede", "clima", "bateria"];
+    public static readonly string[] AllRightItems = ["aurora", "conexao", "volume", "bateria", "relogio"];
 }
 
 public sealed class DockItem

@@ -71,6 +71,18 @@ O app tem uma instância só. Uma segunda execução abre as configurações da 
   - Clique abre o app ou traz a janela à frente. Clicar no app ativo minimiza; com várias janelas, alterna entre elas. O clique do meio abre uma nova janela.
   - Arraste arquivos, atalhos e pastas para fixar. Arraste um item para reordenar ou para fora do dock para desafixar.
   - O clique direito mostra janelas, fechar, fixar/desafixar, abrir local do arquivo e as opções do dock.
+- **Dock em três ilhas** (padrão, nas bordas inferior e superior):
+  - **Esquerda, estatísticas**: CPU e RAM com barrinha de uso, rede (download), clima da sua cidade e, opcionalmente, disco C: e bateria. Clicar na CPU ou na RAM abre o Gerenciador de Tarefas.
+  - **Centro**: os apps.
+  - **Direita, bandeja**:
+    - o **ícone do Aurora Desk** (o mesmo menu da bandeja, que some junto com a barra do Windows);
+    - Wi-Fi ou cabo e volume (role o mouse para ajustar);
+    - bateria, se houver;
+    - relógio com data.
+
+    Os ícones do sistema abrem as configurações rápidas do Windows (Win+A) e o relógio abre as notificações e o calendário (Win+N). Enquanto esses painéis estão abertos, o Windows mostra a própria barra por baixo; ela some de novo ao fechá-los.
+  - Escolha os itens em Configurações → Dock → Três ilhas. As ilhas usam as mesmas medidas dos widgets, lidas uma vez só.
+  - Ícones de outros apps da bandeja (Discord, Steam...) ainda não aparecem: eles pertencem à barra do Windows.
 - **Configurações**: abas Widgets, Dock, Temas, Fontes, Desempenho e Geral.
 
 ## Como criar um widget

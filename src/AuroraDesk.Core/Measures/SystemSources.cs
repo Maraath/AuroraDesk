@@ -82,12 +82,16 @@ public sealed unsafe class NetworkSampler
     public double DownloadRate { get; private set; }
     public double UploadRate { get; private set; }
 
+    /// <summary>Melhor conexão ativa: Wi-Fi, cabo ou nenhuma.</summary>
+    public ConnectionKind Connection { get; private set; }
+
     public void Sample(long tick)
     {
         if (tick == _lastTick) return;
         _lastTick = tick;
 
-        var (inOctets, outOctets) = ReadTotals();
+        var (inOctets, outOctets, connection) = ReadTotals();
+        Connection = connection;
         long now = System.Diagnostics.Stopwatch.GetTimestamp();
 
         if (_hasPrevious)
@@ -107,14 +111,15 @@ public sealed unsafe class NetworkSampler
     public static double Rate(ulong previous, ulong current, double seconds) =>
         seconds <= 0 || current < previous ? 0 : (current - previous) / seconds;
 
-    private static (ulong In, ulong Out) ReadTotals()
+    private static (ulong In, ulong Out, ConnectionKind Connection) ReadTotals()
     {
-        if (NativeMethods.GetIfTable2(out nint table) != 0) return (0, 0);
+        if (NativeMethods.GetIfTable2(out nint table) != 0) return (0, 0, ConnectionKind.None);
         try
         {
             uint count = *(uint*)table;
             var rows = (NativeMethods.MIB_IF_ROW2*)(table + 8);
             ulong totalIn = 0, totalOut = 0;
+            var connection = ConnectionKind.None;
             for (uint i = 0; i < count; i++)
             {
                 ref var row = ref rows[i];
@@ -123,8 +128,9 @@ public sealed unsafe class NetworkSampler
                 if (!hardware || row.OperStatus != IfOperStatusUp || row.Type == IfTypeLoopback) continue;
                 totalIn += row.InOctets;
                 totalOut += row.OutOctets;
+                connection = Best(connection, KindOf(row.Type));
             }
-            return (totalIn, totalOut);
+            return (totalIn, totalOut, connection);
         }
         finally
         {
@@ -133,4 +139,13 @@ public sealed unsafe class NetworkSampler
     }
 
     internal static int RowSize => sizeof(NativeMethods.MIB_IF_ROW2);
+
+    /// <summary>IFTYPE: 71 = Wi-Fi (IEEE 802.11), 6 = Ethernet; o resto conta como cabo (USB, celular...).</summary>
+    internal static ConnectionKind KindOf(uint ifType) => ifType == 71 ? ConnectionKind.Wifi : ConnectionKind.Wired;
+
+    /// <summary>Com cabo e Wi-Fi ao mesmo tempo, o Windows prefere o cabo; o ícone segue.</summary>
+    internal static ConnectionKind Best(ConnectionKind a, ConnectionKind b) => (ConnectionKind)Math.Max((int)a, (int)b);
 }
+
+/// <summary>Tipo de conexão de rede ativa (a ordem define a preferência).</summary>
+public enum ConnectionKind { None = 0, Wifi = 1, Wired = 2 }

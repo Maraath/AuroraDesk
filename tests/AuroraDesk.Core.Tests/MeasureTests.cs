@@ -37,6 +37,26 @@ public class MeasureTests
     }
 
     [Fact]
+    public void TipoDeConexaoPrefereCabo()
+    {
+        Assert.Equal(ConnectionKind.Wifi, NetworkSampler.KindOf(71));
+        Assert.Equal(ConnectionKind.Wired, NetworkSampler.KindOf(6));
+        Assert.Equal(ConnectionKind.Wired, NetworkSampler.Best(ConnectionKind.Wifi, ConnectionKind.Wired));
+        Assert.Equal(ConnectionKind.Wifi, NetworkSampler.Best(ConnectionKind.None, ConnectionKind.Wifi));
+        Assert.Equal("Sem conexão", ConnectionMeasure.Describe(ConnectionKind.None, Formatting.Strings.Lang.PtBr));
+    }
+
+    [Fact]
+    public void VolumeLeSemErroOuInformaIndisponivel()
+    {
+        var m = new VolumeMeasure(new MeasureSpec("volume"));
+        m.Update(new SampleContext(new SystemSources(), DateTimeOffset.Now, 1));
+        Assert.Null(m.Error);
+        if (m.Available) Assert.InRange(m.Value, 0, 100);
+        else Assert.Equal("--", m.Text);
+    }
+
+    [Fact]
     public void LayoutDeMibIfRow2TemOTamanhoDoWindows() => Assert.Equal(1352, NetworkSampler.RowSize);
 
     [Fact]
@@ -70,7 +90,7 @@ public class MeasureTests
         // Lê as fontes reais do Windows uma vez: garante que as chamadas Win32 funcionam aqui.
         var registry = MeasureRegistry.CreateDefault();
         var sources = new SystemSources();
-        foreach (var type in new[] { "cpu", "memoria", "disco", "rede", "bateria", "relogio", "uptime" })
+        foreach (var type in new[] { "cpu", "memoria", "disco", "rede", "bateria", "relogio", "uptime", "conexao", "volume" })
         {
             var m = registry.Create(new MeasureSpec(type));
             m.Update(new SampleContext(sources, DateTimeOffset.Now, 1));

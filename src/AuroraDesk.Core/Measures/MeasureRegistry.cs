@@ -22,6 +22,8 @@ public sealed class MeasureRegistry
         r.Register("bateria", s => new BatteryMeasure(s));
         r.Register("relogio", s => new ClockMeasure(s));
         r.Register("uptime", s => new UptimeMeasure(s));
+        r.Register("conexao", s => new ConnectionMeasure(s));
+        r.Register("volume", s => new VolumeMeasure(s));
         return r;
     }
 

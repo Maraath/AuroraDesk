@@ -71,10 +71,13 @@ internal sealed unsafe class DockWindow : Window
             Log.Warn("Acrílico/desfoque indisponível neste Windows");
     }
 
-    /// <summary>Posiciona o dock na borda do monitor. Tamanhos em DIPs vindos da superfície.</summary>
-    public void Place(nint monitor, DockEdge edge, bool reserve)
+    /// <summary>
+    /// Posiciona o dock na borda do monitor (tamanhos em DIPs vindos da superfície). Devolve a
+    /// área usada (área de trabalho ou faixa reservada) e a escala, para as ilhas laterais.
+    /// </summary>
+    public (Win32.RECT Area, double Scale) Place(nint monitor, DockEdge edge, bool reserve)
     {
-        if (_hwnd == 0) return;
+        if (_hwnd == 0) return (default, 1);
         Surface.Edge = edge;
         var info = Win32.MonitorInfo(monitor);
         double scale = Win32.MonitorScale(monitor);
@@ -101,6 +104,7 @@ internal sealed unsafe class DockWindow : Window
             default: (x, y, w, h) = (mainStart, area.Bottom - thickness - backdropGap, length, thickness); break;
         }
         Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, x, y, w, h, Win32.SWP_NOACTIVATE);
+        return (area, scale);
     }
 
     // ---------- AppBar ----------

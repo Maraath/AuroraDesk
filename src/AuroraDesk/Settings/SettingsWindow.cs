@@ -216,6 +216,32 @@ internal sealed class SettingsWindow : Window
             Ui.Row("Ocultar automaticamente", Ui.Toggle(d.AutoHide, v => Apply(() => d.AutoHide = v)), "Some quando o mouse sai; volta ao encostar na borda. Não vale enquanto houver espaço reservado."),
             Ui.Row("Mostrar apps abertos não fixados", Ui.Toggle(d.ShowRunning, v => Apply(() => d.ShowRunning = v)))));
 
+        page.Children.Add(Ui.Section("Três ilhas"));
+        WrapPanel Checks(string[] all, List<string> selected, (string Key, string Label)[] labels)
+        {
+            var p = new WrapPanel { Margin = new Thickness(0, 4, 0, 4) };
+            foreach (var key in all)
+            {
+                string k = key;
+                p.Children.Add(Ui.Toggle(selected.Contains(k), v =>
+                {
+                    selected.Remove(k);
+                    if (v) selected.Add(k);
+                    _host.Dock.ApplyConfig();
+                }, labels.First(l => l.Key == k).Label));
+                p.Children.Add(new Border { Width = 14 });
+            }
+            return p;
+        }
+        page.Children.Add(Ui.Card(
+            Ui.Row("Estilo três ilhas", Ui.Toggle(d.Islands, v => Apply(() => d.Islands = v)),
+                "Estatísticas à esquerda, apps no centro, bandeja e relógio à direita. Vale com o dock nas bordas inferior ou superior."),
+            new TextBlock { Text = "Ilha esquerda", Margin = new Thickness(0, 8, 0, 0) },
+            Checks(DockConfig.AllLeftItems, d.LeftItems, [("cpu", "CPU"), ("ram", "RAM"), ("disco", "Disco C:"), ("rede", "Rede"), ("clima", "Clima"), ("bateria", "Bateria")]),
+            new TextBlock { Text = "Ilha direita", Margin = new Thickness(0, 8, 0, 0) },
+            Checks(DockConfig.AllRightItems, d.RightItems, [("aurora", "Aurora Desk"), ("conexao", "Wi-Fi/rede"), ("volume", "Volume"), ("bateria", "Bateria"), ("relogio", "Relógio")]),
+            Ui.Note("Clique na CPU ou na RAM para abrir o Gerenciador de Tarefas, nos ícones do sistema para abrir as configurações rápidas do Windows e no relógio para ver as notificações e o calendário. Role o mouse sobre o volume para ajustá-lo. O clima só aparece com o clima ligado (Geral).")));
+
         page.Children.Add(Ui.Section("Aparência"));
         page.Children.Add(Ui.Card(
             Ui.Row("Tamanho dos ícones", Ui.Slider(24, 96, d.IconSize, 2, v => $"{v:0} px", v => Apply(() => d.IconSize = (int)v))),

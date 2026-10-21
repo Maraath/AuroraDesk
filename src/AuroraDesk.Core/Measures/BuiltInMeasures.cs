@@ -127,12 +127,14 @@ public sealed class BatteryMeasure(MeasureSpec spec) : Measure(spec)
 
     public bool HasBattery { get; private set; }
     public bool Charging { get; private set; }
+    public bool PluggedIn { get; private set; }
 
     protected override void Read(SampleContext context)
     {
         NativeMethods.GetSystemPowerStatus(out var s);
         HasBattery = s.BatteryFlag != 128 && s.BatteryFlag != 255;
         Charging = (s.BatteryFlag & 8) != 0;
+        PluggedIn = s.ACLineStatus == 1;
         double level = HasBattery && s.BatteryLifePercent <= 100 ? s.BatteryLifePercent : 100;
         Value = _mode == "estado" ? (Charging ? 1 : 0) : level;
         Max = _mode == "estado" ? 1 : 100;
@@ -176,6 +178,51 @@ public sealed class ClockMeasure(MeasureSpec spec) : Measure(spec)
     {
         long ticks = now.Ticks - now.Ticks % period.Ticks + period.Ticks;
         return new DateTimeOffset(ticks, now.Offset).AddMilliseconds(15);
+    }
+}
+
+/// <summary>"conexao": tipo da conexão ativa. Valor 0 = sem rede, 1 = Wi-Fi, 2 = cabo; texto descritivo.</summary>
+public sealed class ConnectionMeasure(MeasureSpec spec) : Measure(spec)
+{
+    public override bool IsText => true;
+    public override TimeSpan DefaultInterval => TimeSpan.FromSeconds(5);
+    public ConnectionKind Kind { get; private set; }
+
+    protected override void Read(SampleContext context)
+    {
+        var net = context.Sources.Network;
+        net.Sample(context.Tick);
+        Kind = net.Connection;
+        Value = (int)Kind;
+        Max = 2;
+        Text = Describe(Kind, Strings.Language);
+    }
+
+    public static string Describe(ConnectionKind kind, Strings.Lang lang) => (kind, lang == Strings.Lang.PtBr) switch
+    {
+        (ConnectionKind.Wifi, true) => "Wi-Fi",
+        (ConnectionKind.Wired, true) => "Cabo",
+        (_, true) => "Sem conexão",
+        (ConnectionKind.Wifi, false) => "Wi-Fi",
+        (ConnectionKind.Wired, false) => "Wired",
+        _ => "Offline",
+    };
+}
+
+/// <summary>"volume": volume do alto-falante padrão (%). Texto "mudo" quando silenciado.</summary>
+public sealed class VolumeMeasure(MeasureSpec spec) : Measure(spec)
+{
+    public override TimeSpan DefaultInterval => TimeSpan.FromSeconds(2);
+    public bool Muted { get; private set; }
+    public bool Available { get; private set; }
+
+    protected override void Read(SampleContext context)
+    {
+        Available = Audio.TryRead(out float level, out bool muted);
+        Muted = Available && muted;
+        Value = Available ? Math.Round(level * 100) : 0;
+        Max = 100;
+        Text = !Available ? "--" : Muted ? (Strings.Language == Strings.Lang.PtBr ? "mudo" : "muted") : Value.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
     }
 }
 

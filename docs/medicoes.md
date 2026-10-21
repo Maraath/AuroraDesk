@@ -60,7 +60,14 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
   - Fechar ou encerrar à força: área de trabalho volta a y=1032.
   - O teste encontrou um defeito: depois de reiniciar o Explorer a reserva se perdia (y=1080), porque o novo Explorer esquece as AppBars. Corrigido: o dock se registra de novo e a área volta a y=1015.
 
+- **Dock em três ilhas** (conferido em captura): ilhas alinhadas ao dock, textos alinhados, Win+A e Win+N abrem os painéis do Windows com a barra oculta, e a barra volta a sumir ao fechá-los.
+  - Custo medido: +7,5 MB de Private Bytes (61,2 sem as ilhas, 68,5 com elas).
+  - O volume lido pelo Core Audio a cada 2 s, recriando os objetos COM, custava 0,30% de CPU ociosa. Guardando o ponteiro do alto-falante (renovado a cada ~20 s), caiu para 0,14%. Sem o volume, a CPU fica em 0,09%.
+  - Início: 1,4 a 2,5 s nesta sessão, mas também 1,8 a 2,0 s com as ilhas desligadas. O PC estava mais carregado (CPU em ~55%); em sessões anteriores, a mesma medição dava 0,8 s.
+
 Não verificado (ou verificado só parcialmente):
+
+- Clique real com o mouse nos itens das ilhas, como abrir o Gerenciador de Tarefas e rolar o volume. Os atalhos Win+A e Win+N foram testados enviando as teclas.
 
 - O caso "Finalizar árvore de processos" (app e vigia encerrados juntos) deixa a barra oculta até abrir o app de novo ou usar Restaurar original. O caso está documentado, mas não foi testado.
 
@@ -85,3 +92,5 @@ Não verificado (ou verificado só parcialmente):
 | 2026-10-21 17:07 | Barra do Windows oculta + vigia | 59,4 | 13,8 | 5,3 | 0,03 | 0,13 | 507 | 18 | 954 |
 | 2026-10-21 17:49 | Autocontido (runtime embutido, para o instalador) | 65,8 | 32,9 | 10,6 | 0,16 | 2,08 | 599 | 17 | 6050 |
 | 2026-10-21 17:50 | Autocontido (2ª execução) | 59,0 | 18,4 | 6,3 | 0,04 | 0,26 | 505 | 17 | 2745 |
+| 2026-10-21 19:41 | Dock em três ilhas (estatísticas + bandeja) | 68,8 | 42,8 | 15,4 | 0,30 | 5,28 | 733 | 23 | 2464 |
+| 2026-10-21 19:44 | Três ilhas, volume com ponteiro reaproveitado | 68,5 | 29,2 | 13,3 | 0,14 | 0,52 | 742 | 24 | 2181 |

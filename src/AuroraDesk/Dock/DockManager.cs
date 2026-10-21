@@ -14,7 +14,7 @@ namespace AuroraDesk.Dock;
 /// Dock: itens fixados + aplicativos em execução, cliques, menus, arrastar e soltar,
 /// ocultar automaticamente e posição. A barra de tarefas do Windows nunca é alterada.
 /// </summary>
-internal sealed class DockManager : IDisposable
+internal sealed partial class DockManager : IDisposable
 {
     private readonly AppHost _host;
     private readonly IconCache _icons;
@@ -74,7 +74,7 @@ internal sealed class DockManager : IDisposable
         s.ItemMoved += OnItemMoved;
         s.ItemDraggedOut += OnItemDraggedOut;
         s.FilesDropped += OnFilesDropped;
-        s.MouseEntered += () => { _hideTimer.Stop(); if (s.IsHidden) s.SetHidden(false); };
+        s.MouseEntered += () => { _hideTimer.Stop(); if (s.IsHidden) { s.SetHidden(false); SetIslandsVisible(true); } };
         s.MouseLeft += () => { if (AutoHideActive) { _hideTimer.Stop(); _hideTimer.Start(); } };
         _window.FullscreenChanged += full => { _fullscreen = full; UpdateVisibility(); };
         _window.AppBarPositionChanged += Place;
@@ -84,6 +84,7 @@ internal sealed class DockManager : IDisposable
 
         if (_running.All.Count == 0) _running.Start();
         Rebuild();
+        ShowIslands();
         if (AutoHideActive) { _hideTimer.Stop(); _hideTimer.Start(); }
     }
 
@@ -92,9 +93,11 @@ internal sealed class DockManager : IDisposable
         if (_window is null) return;
         _hideTimer.Stop();
         if (_running is not null) _running.Changed -= Rebuild;
+        CloseIslands();
         _window.Close(); // devolve o espaço da AppBar
         _window = null;
         _layoutKey = "";
+        _host.UpdateMeasureDemand();
     }
 
     private bool AutoHideActive => Config.AutoHide && !Reserve && _window is { UsesBackdrop: false };
@@ -106,6 +109,7 @@ internal sealed class DockManager : IDisposable
     {
         if (_window is null || !AutoHideActive || _window.IsMouseOver) return;
         _window.Surface.SetHidden(true);
+        SetIslandsVisible(false);
     }
 
     private void OnStateChanged()
@@ -118,8 +122,8 @@ internal sealed class DockManager : IDisposable
     {
         if (_window is null) return;
         // Em jogos e vídeos em tela cheia o dock sai do caminho.
-        if (_fullscreen && _window.IsVisible) _window.Hide();
-        else if (!_fullscreen && !_window.IsVisible) { _window.Show(); Place(); }
+        if (_fullscreen && _window.IsVisible) { _window.Hide(); SetIslandsVisible(false); }
+        else if (!_fullscreen && !_window.IsVisible) { _window.Show(); Place(); SetIslandsVisible(true); }
     }
 
     // ---------- itens ----------
@@ -286,7 +290,8 @@ internal sealed class DockManager : IDisposable
     private void Place()
     {
         if (_window is null) return;
-        _window.Place(TargetMonitor(), ParseEdge(Config.Edge), Reserve);
+        _lastPlacement = _window.Place(TargetMonitor(), ParseEdge(Config.Edge), Reserve);
+        PlaceIslands();
     }
 
     /// <summary>Reaplica a configuração (chamado pelo menu e pelas configurações).</summary>
@@ -302,6 +307,7 @@ internal sealed class DockManager : IDisposable
         _layoutKey = "";
         _icons.Clear();
         Rebuild();
+        ShowIslands(); // itens, borda ou estilo podem ter mudado
         if (AutoHideActive) { _hideTimer.Stop(); _hideTimer.Start(); }
         _host.SaveConfig();
     }
@@ -310,6 +316,12 @@ internal sealed class DockManager : IDisposable
     {
         _window?.ApplyBackdrop(_host.Themes.Current.Panel);
         _window?.Surface.InvalidateVisual();
+        foreach (var w in new[] { _leftIsland, _rightIsland })
+        {
+            if (w is null || _window is null) continue;
+            w.ApplyBackdrop(_window.UsesBackdrop, _host.Themes.Current.Panel, Config.Backdrop);
+        }
+        PlaceIslands(); // a fonte do tema muda a largura dos textos
     }
 
     private bool OnControlMessage(int msg, nint wParam, nint lParam)
