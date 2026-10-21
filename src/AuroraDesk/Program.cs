@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using AuroraDesk.Interop;
 
 namespace AuroraDesk;
@@ -6,11 +7,17 @@ internal static class Program
 {
     /// <summary>
     /// Ponto de entrada. Garante instância única antes de carregar o WPF.
-    /// Argumentos: --sair (fecha a instância aberta), --configuracoes (abre as configurações).
+    /// Argumentos: --sair (fecha a instância aberta), --configuracoes (abre as configurações),
+    /// --vigia &lt;pid&gt; (uso interno: restaura a barra de tarefas se o app cair).
     /// </summary>
     [STAThread]
     private static int Main(string[] args)
     {
+        // O vigia roda antes de tudo e não toca em WPF nem na instância única.
+        int watch = Array.FindIndex(args, a => a.Equals("--vigia", StringComparison.OrdinalIgnoreCase));
+        if (watch >= 0 && watch + 1 < args.Length && int.TryParse(args[watch + 1], out int watched))
+            return Infrastructure.TaskbarWatchdog.RunWatchdog(watched, BackupFile());
+
         bool exit = args.Any(a => a.Equals("--sair", StringComparison.OrdinalIgnoreCase));
 
         // --reiniciar <pid>: espera a instância anterior fechar antes de tentar a instância única.
@@ -29,8 +36,12 @@ internal static class Program
         }
         if (exit) return 0;
 
-        bool openSettings = args.Any(a => a.Equals("--configuracoes", StringComparison.OrdinalIgnoreCase));
-        var app = new App(openSettings);
-        return app.Run();
+        return RunApp(args.Any(a => a.Equals("--configuracoes", StringComparison.OrdinalIgnoreCase)));
     }
+
+    /// <summary>Separado do Main para o vigia não carregar as DLLs do WPF ao compilar o Main.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int RunApp(bool openSettings) => new App(openSettings).Run();
+
+    internal static string BackupFile() => Path.Combine(new Core.Config.AppPaths().Backup, "barra-de-tarefas.json");
 }

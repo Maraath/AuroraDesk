@@ -17,6 +17,11 @@ public sealed class AppConfig
     /// <summary>Fonte global que substitui a do tema (vazio = usar a do tema).</summary>
     public string? FontOverride { get; set; }
     public bool WidgetsVisible { get; set; } = true;
+    /// <summary>
+    /// Oculta a barra de tarefas do Windows enquanto o app está aberto (o dock a substitui).
+    /// Ao fechar, ou se o app cair, a barra volta ao estado original.
+    /// </summary>
+    public bool HideTaskbar { get; set; } = true;
     public bool FirstRunDone { get; set; }
     public List<WidgetInstance> Widgets { get; set; } = [];
     public DockConfig Dock { get; set; } = new();

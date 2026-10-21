@@ -171,6 +171,18 @@ Cores ausentes recebem o padrão. Um tema com o nome de um dos incluídos o subs
 
 Copie arquivos `.ttf` ou `.otf` para `%APPDATA%\AuroraDesk\fonts\`. Elas são carregadas direto do arquivo, **sem instalar no Windows**, e aparecem primeiro no seletor (Configurações → Fontes, com pré-visualização). Use o nome da família no skin (`"fonte": "Inter"`), na fonte do widget ou como fonte global. Se uma fonte sumir, o app usa Segoe UI Variable em seu lugar.
 
+## Barra de tarefas do Windows
+
+Com a opção **"Ocultar a barra de tarefas do Windows enquanto o Aurora Desk estiver aberto"** ligada (padrão), o dock substitui a barra.
+
+- Ligue ou desligue em Configurações → Geral, no menu da bandeja ou no clique direito do dock.
+- Ao fechar o app, a barra volta exatamente como estava, inclusive se "ocultar automaticamente" estava ligado.
+- Se o app cair ou for encerrado pelo Gerenciador de Tarefas ("Finalizar tarefa"), o processo vigia `AuroraDesk.exe --vigia` devolve a barra em menos de 1 s.
+- Com a barra oculta, o ícone da bandeja do Aurora Desk some junto. Abra as configurações pelo **clique direito no dock** ("Configurações do Aurora Desk" e "Sair") ou executando o `AuroraDesk.exe` de novo.
+- Os atalhos do Windows continuam funcionando: Win (Iniciar), Win+A (configurações rápidas) e Win+N (notificações e calendário).
+- O dock flutua sobre o rodapé das janelas maximizadas. Para que elas parem acima dele, ligue **Dock → Reservar espaço na tela**.
+- Caso extremo: se o app e o vigia forem encerrados juntos ("Finalizar árvore de processos"), a barra fica oculta até você abrir o Aurora Desk de novo (que a gerencia) ou usar **Restaurar original**.
+
 ## Perfis e Rainmeter
 
 - **Exportar/Importar perfil** (Configurações → Geral): um `.zip` com tema, widgets, fontes e configuração do dock. A importação:
@@ -198,8 +210,9 @@ O script mostra Private Bytes, Working Set (total, pico e privado), CPU média o
 ## Segurança e privacidade
 
 - Nada exige administrador. O app só mexe no usuário atual: a chave `HKCU\...\Run` (se você ligar "Iniciar com o Windows") e a reserva de espaço do dock (AppBar, devolvida ao sair).
-- **Restaurar original** devolve os valores do registro guardados em `backup\windows-original.json` e libera o espaço do dock.
-- A barra de tarefas, o papel de parede e as cores do Windows **não são alterados**; o modo claro/escuro e a cor de destaque são só lidos.
+- **Restaurar original** devolve os valores do registro guardados em `backup\windows-original.json`, libera o espaço do dock e mostra a barra de tarefas de novo (desligando a opção de ocultá-la).
+- **Barra de tarefas do Windows**: por padrão, fica **oculta enquanto o Aurora Desk estiver aberto** e volta sozinha quando ele fecha. Veja "Barra de tarefas do Windows" abaixo.
+- O papel de parede e as cores do Windows **não são alterados**; o modo claro/escuro e a cor de destaque são só lidos.
 - Rede: somente o clima, se você ligar, consulta `api.open-meteo.com` a cada 30 min, enviando só latitude e longitude. Não há telemetria.
 - Falhas são isoladas: uma medida ou um widget com erro é registrado em `%LOCALAPPDATA%\AuroraDesk\logs\aurora.log` (rotativo, até 1 MB) e o resto continua.
 
@@ -226,7 +239,13 @@ O script mostra Private Bytes, Working Set (total, pico e privado), CPU média o
   - Os números estão em [docs/medicoes.md](docs/medicoes.md).
 - **Liberação de memória**: 20 s depois de iniciar e ao fechar as configurações, o app faz um GC compactando e chama `SetProcessWorkingSetSize(-1,-1)`, no máximo a cada 5 min. Isso derruba o Working Set (ex.: 100 → 16 MB) sem mudar o Private Bytes; as páginas voltam sob demanda.
 - **Janela de configurações** com o tema Fluent do WPF (`ThemeMode.Dark`, que o .NET 10 ainda marca como experimental), montada em código e descartada ao fechar. Ela custa ~20 MB enquanto aberta; ao fechar, ~7 MB de bibliotecas continuam carregadas.
-- **Dock reservando espaço** (AppBar) é opcional. O padrão é flutuante acima da barra de tarefas, que nunca é escondida nem alterada.
+- **Dock reservando espaço** (AppBar) é opcional. O padrão é flutuante, no rodapé da tela.
+- **Barra do Windows oculta enquanto o app está aberto** (pedido do usuário; dá para desligar). O app:
+  - grava o estado original em `backup\barra-de-tarefas.json`;
+  - liga "ocultar automaticamente", para as janelas maximizadas usarem a tela toda, e esconde a janela da barra;
+  - esconde de novo se o Explorer mostrá-la (evento de janela) ou reiniciar.
+
+  Para a barra voltar **mesmo se o app cair ou for encerrado à força**, o app inicia um processo vigia: o próprio `AuroraDesk.exe --vigia <pid>`, sem WPF, com 5,8 MB medidos. Ele só espera o app terminar e então restaura. Se o arquivo de backup já existe (queda anterior), o original antigo é mantido, para nunca "restaurar" para o estado alterado.
 - **Interface só em português.** A opção de idioma (pt-BR/en) vale para datas e textos dos widgets.
 
 ## Dependências

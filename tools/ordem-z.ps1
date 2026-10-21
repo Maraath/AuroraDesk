@@ -9,7 +9,8 @@ Add-Type -Namespace Z -Name W -MemberDefinition @'
 [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int n);
 [DllImport("user32.dll")] public static extern IntPtr GetWindowLongPtr(IntPtr h, int i);
 '@
-$aurora = (Get-Process AuroraDesk -ErrorAction SilentlyContinue).Id
+# Processo principal (o vigia da barra de tarefas tem o mesmo nome, mas roda com --vigia).
+$aurora = (Get-CimInstance Win32_Process -Filter "Name='AuroraDesk.exe'" | Where-Object { $_.CommandLine -notmatch '--vigia' } | Select-Object -First 1).ProcessId
 $h = [Z.W]::GetTopWindow([IntPtr]::Zero)
 $i = 0; $visiveis = 0
 $lista = @()

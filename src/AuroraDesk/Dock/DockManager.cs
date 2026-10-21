@@ -311,7 +311,8 @@ internal sealed class DockManager : IDisposable
 
     private bool OnControlMessage(int msg, nint wParam, nint lParam)
     {
-        if (msg == Win32.WM_DISPLAYCHANGE || msg == ControlWindow.TaskbarCreatedMessage)
+        const int SPI_SETWORKAREA = 0x2F; // a área de trabalho mudou (ex.: barra do Windows oculta/mostrada)
+        if (msg == Win32.WM_DISPLAYCHANGE || msg == ControlWindow.TaskbarCreatedMessage || (msg == Win32.WM_SETTINGCHANGE && wParam == SPI_SETWORKAREA))
             _host.Dispatcher.BeginInvoke(DispatcherPriority.Background, () => { _layoutKey = ""; Rebuild(); });
         return false;
     }
@@ -454,6 +455,11 @@ internal sealed class DockManager : IDisposable
         }
         menu.Item("Adicionar separador", () => { Config.Items.Add(new DockItem { Kind = "separador" }); Changed(); });
         menu.Submenu("Configurações do dock", SettingsMenu());
+        // Com a barra do Windows oculta, o ícone da bandeja some junto: o dock dá acesso ao app.
+        menu.Separator()
+            .Item("Ocultar a barra de tarefas do Windows", () => _host.SetHideTaskbar(!_host.Config.HideTaskbar), isChecked: _host.Config.HideTaskbar)
+            .Item("Configurações do Aurora Desk", _host.OpenSettings)
+            .Item("Sair do Aurora Desk", _host.Exit);
         menu.Show(_window.Handle, _host.Themes.Current.Dark);
         if (AutoHideActive && !_window.IsMouseOver) _hideTimer.Start();
     }

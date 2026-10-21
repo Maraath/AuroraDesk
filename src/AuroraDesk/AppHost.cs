@@ -55,6 +55,17 @@ internal sealed class AppHost : IDisposable
         Backup = new OriginalValues(Path.Combine(Paths.Backup, "windows-original.json"), registry);
         Startup = new StartupRegistration(Backup, registry);
         Trimmer = new MemoryTrimmer(Config.Performance, Dispatcher);
+        Taskbar = new TaskbarHider(new TaskbarBackup(Program.BackupFile()), Control, Dispatcher);
+    }
+
+    public TaskbarHider Taskbar { get; }
+
+    /// <summary>Liga/desliga a regra "ocultar a barra do Windows enquanto o app estiver aberto".</summary>
+    public void SetHideTaskbar(bool hide)
+    {
+        Config.HideTaskbar = hide;
+        if (hide) Taskbar.Hide(); else Taskbar.Restore();
+        SaveConfig();
     }
 
     public DockManager Dock { get; }
@@ -93,6 +104,10 @@ internal sealed class AppHost : IDisposable
 
         Widgets.Start();
         Dock.Start();
+        // Com a regra ligada, a barra do Windows some enquanto o app estiver aberto. Se uma
+        // execução anterior caiu com a barra oculta e a regra foi desligada, devolve a barra.
+        if (Config.HideTaskbar) Taskbar.Hide();
+        else Taskbar.Restore();
 
         var startedAt = Process.GetCurrentProcess().StartTime;
         // Medido quando a fila de interface esvazia, isto é, com tudo já visível.
@@ -162,6 +177,7 @@ internal sealed class AppHost : IDisposable
             .Item(Config.WidgetsVisible ? "Ocultar widgets" : "Mostrar widgets", () => Widgets.SetVisible(!Config.WidgetsVisible))
             .Submenu("Dock", Dock.SettingsMenu())
             .Item(Config.Dock.Enabled ? "Ocultar dock" : "Mostrar dock", () => Dock.SetEnabled(!Config.Dock.Enabled))
+            .Item("Ocultar a barra de tarefas do Windows", () => SetHideTaskbar(!Config.HideTaskbar), isChecked: Config.HideTaskbar)
             .Separator()
             .Item("Configurações", OpenSettings)
             .Item("Abrir pasta de dados", () => OpenFolder(Paths.Roaming))
@@ -204,6 +220,13 @@ internal sealed class AppHost : IDisposable
         int count = 0;
         try { count = Backup.RestoreAll(); }
         catch (Exception ex) { Log.Error("Falha ao restaurar valores originais", ex); }
+        if (Config.HideTaskbar || Taskbar.IsActive)
+        {
+            Config.HideTaskbar = false;
+            Taskbar.Restore();
+            SaveConfig();
+            count++;
+        }
         if (Config.Dock.ReserveSpace)
         {
             Config.Dock.ReserveSpace = false;
@@ -270,6 +293,7 @@ internal sealed class AppHost : IDisposable
     {
         _settings?.Close();
         if (!_skipSaveOnExit) SaveConfig();
+        Taskbar.Restore(); // primeiro: a barra volta mesmo se algo abaixo falhar
         Dock.Dispose();
         Widgets.Dispose();
         _themeWatcher?.Dispose();

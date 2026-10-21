@@ -81,6 +81,10 @@ if (Test-Path $log) {
     if ($linha -and $linha -match 'em (\d+) ms') { $inicioMs = [int]$Matches[1] }
 }
 
+# Processo vigia da barra de tarefas (existe quando "ocultar a barra do Windows" está ligado).
+$vigia = Get-CimInstance Win32_Process -Filter "Name='AuroraDesk.exe'" | Where-Object { $_.CommandLine -match "--vigia $($p.Id)" } | Select-Object -First 1
+$vigiaMb = if ($vigia) { (Get-Process -Id $vigia.ProcessId).PrivateMemorySize64 / 1MB } else { $null }
+
 $fmt = { param($v) if ($null -eq $v) { 'n/d' } else { '{0:N1}' -f $v } }
 Write-Host ''
 Write-Host '=== Aurora Desk: medição ==='
@@ -92,6 +96,7 @@ Write-Host ("CPU média ociosa (10-{0} s): {1:N2}% (pico de 1 s: {2:N2}%)" -f $S
 Write-Host ("CPU média total:            {0:N2}%" -f $cpuTotal)
 Write-Host ("Handles / threads:          {0} / {1}" -f $handles, $threads)
 Write-Host ("Inicialização:              {0} ms" -f $(if ($inicioMs) { $inicioMs } else { 'n/d' }))
+Write-Host ("Processo vigia da barra:    {0} MB (Private Bytes)" -f (& $fmt $vigiaMb))
 
 if (-not $SemRegistro) {
     $arq = Join-Path $raiz 'docs\medicoes.md'

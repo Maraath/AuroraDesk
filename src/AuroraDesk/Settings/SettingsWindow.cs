@@ -468,6 +468,11 @@ internal sealed class SettingsWindow : Window
 
         bool startup = _host.Startup.IsEnabled;
         page.Children.Add(Ui.Card(
+            Ui.Row("Ocultar a barra de tarefas do Windows enquanto o Aurora Desk estiver aberto",
+                Ui.Toggle(Config.HideTaskbar, v => _host.SetHideTaskbar(v)),
+                "O dock assume o lugar da barra. Ao fechar o app, ou se ele cair, a barra volta sozinha ao estado original. Com a barra oculta, o ícone da bandeja também some: abra as configurações pelo clique direito no dock ou executando o Aurora Desk de novo."),
+            Ui.Note("Os atalhos do Windows continuam funcionando: Win (Iniciar), Win+A (configurações rápidas) e Win+N (notificações e calendário).")));
+        page.Children.Add(Ui.Card(
             Ui.Row("Iniciar com o Windows", Ui.Toggle(startup, v => _host.Startup.Set(v)),
                 _host.Startup.PointsElsewhere ? "Atenção: a entrada atual aponta para outro executável; ligar de novo corrige." : "Usa a chave Run do seu usuário; pode ser desligado a qualquer momento."),
             Ui.Row("Idioma de datas e textos dos widgets", Ui.Combo([("Português (Brasil)", "pt-BR"), ("English", "en")], Config.Language, v =>
