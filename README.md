@@ -28,6 +28,24 @@ Metas: até ~80 MB foi **atingida**. A meta ambiciosa de ~50 MB **não foi ating
 - Runtime **.NET 10 Desktop** (`Microsoft.WindowsDesktop.App` 10.x) para rodar.
 - **SDK .NET 10** para compilar.
 
+## Instalador
+
+```powershell
+.\tools\instalador.ps1      # gera artifacts\instalador\AuroraDesk-Setup-<versão>.exe (~43 MB)
+```
+
+- **Funciona em qualquer Windows 11 (e Windows 10 20H1+ x64) sem instalar nada antes.** O app é publicado autocontido, com o .NET 10 Desktop Runtime embutido na própria pasta. Não precisa de internet nem de .NET no PC, e não interfere em outros programas .NET.
+- **Sem administrador**: instala só para o usuário em `%LOCALAPPDATA%\Programs\Aurora Desk`.
+- O instalador cria o atalho no menu Iniciar (mais "Configurações do Aurora Desk"). Opcionalmente, cria um atalho na área de trabalho e liga "Iniciar com o Windows" (marcado por padrão).
+- O app aparece em **Configurações → Aplicativos instalados**, de onde se desinstala.
+- Ao atualizar ou desinstalar, o app aberto é fechado com calma: a barra do Windows e o espaço do dock voltam antes de os arquivos serem trocados.
+- A desinstalação remove a inicialização com o Windows e pergunta se apaga as configurações, widgets, temas e fontes. A resposta padrão é **não**, para reaproveitar numa reinstalação.
+- Linha de comando (silencioso): `AuroraDesk-Setup-0.1.0.exe /VERYSILENT /TASKS="iniciar"`.
+- O teste automatizado está em `tools\teste-instalador.ps1`: instala, abre, atualiza com o app aberto e desinstala, conferindo arquivos, atalhos, registro e a barra.
+- A RAM medida da versão instalada é igual à da versão dependente do runtime (~59 MB). O início leva ~1,7 s (contra 0,8 s), porque o runtime é carregado da pasta do app. Na primeira execução depois de instalar, pode levar alguns segundos enquanto o antivírus examina os arquivos novos.
+- O instalador não tem assinatura digital. Por isso, o Windows SmartScreen pode avisar "Editor desconhecido" ao baixá-lo; nesse caso, use "Mais informações → Executar assim mesmo". Para assinar, é preciso um certificado de assinatura de código.
+- Para gerar o instalador, é preciso o [Inno Setup 6](https://jrsoftware.org/isinfo.php).
+
 ## Compilar, testar e publicar
 
 ```powershell

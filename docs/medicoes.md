@@ -83,3 +83,5 @@ Não verificado (ou verificado só parcialmente):
 | 2026-10-21 16:23 | M6 - final: dock + 4 widgets, TieredCompilation off | 60,2 | 16,5 | 6,4 | 0,03 | 0,26 | 497 | 17 | 804 |
 | 2026-10-21 16:49 | Correção Win+D (vigia do desktop) | 59,3 | 20,7 | 7,3 | 0,06 | 0,65 | 502 | 18 | 722 |
 | 2026-10-21 17:07 | Barra do Windows oculta + vigia | 59,4 | 13,8 | 5,3 | 0,03 | 0,13 | 507 | 18 | 954 |
+| 2026-10-21 17:49 | Autocontido (runtime embutido, para o instalador) | 65,8 | 32,9 | 10,6 | 0,16 | 2,08 | 599 | 17 | 6050 |
+| 2026-10-21 17:50 | Autocontido (2ª execução) | 59,0 | 18,4 | 6,3 | 0,04 | 0,26 | 505 | 17 | 2745 |
