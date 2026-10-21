@@ -128,6 +128,7 @@ public class SkinTests
     [InlineData("rede")]
     [InlineData("bateria")]
     [InlineData("relogio-analogico")]
+    [InlineData("clima")]
     public void ExemplosEmbutidosNaoTemAvisos(string name)
     {
         var skin = SkinParser.Parse(SkinLibrary.ReadSample(name), name, Registry);

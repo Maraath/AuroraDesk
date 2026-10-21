@@ -75,6 +75,7 @@ internal sealed class SkinCanvas : FrameworkElement
     public void OnThemeChanged()
     {
         if (_skin is null || _themes is null) return;
+        if (Parent is WidgetWindow w) FontOverride = w.Instance.Font;
         _theme = _skin.ThemeName is { } name && _themes.Store.Contains(name) ? _themes.Store.Get(name) : _themes.Current;
         RenderAll();
     }
@@ -132,8 +133,11 @@ internal sealed class SkinCanvas : FrameworkElement
         SetError(Error);
     }
 
+    /// <summary>Fonte escolhida para este widget nas configurações.</summary>
+    public string? FontOverride { get; set; }
+
     private RenderContext Context() =>
-        new(_themes!, _theme!, _skin!, name => _measures.TryGetValue(name, out var m) ? m : null, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        new(_themes!, _theme!, _skin!, name => _measures.TryGetValue(name, out var m) ? m : null, VisualTreeHelper.GetDpi(this).PixelsPerDip, FontOverride);
 
     protected override int VisualChildrenCount => _visuals.Count;
     protected override Visual GetVisualChild(int index) => _visuals[index];

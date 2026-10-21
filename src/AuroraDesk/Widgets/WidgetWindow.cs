@@ -24,7 +24,7 @@ internal sealed class WidgetWindow : Window
     {
         _manager = manager;
         Instance = instance;
-        Canvas = new SkinCanvas();
+        Canvas = new SkinCanvas { FontOverride = instance.Font };
 
         WindowStyle = WindowStyle.None;
         AllowsTransparency = true;

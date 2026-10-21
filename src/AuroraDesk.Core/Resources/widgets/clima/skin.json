@@ -1,0 +1,19 @@
+{
+  // Clima (opcional). Usa a internet: ligue em Configurações > Geral > Clima e informe a cidade.
+  // Dados: Open-Meteo (api.open-meteo.com), sem chave e sem cadastro, uma consulta a cada 30 min.
+  "nome": "Clima",
+  "autor": "Aurora Desk",
+  "tamanho": [220, 104],
+  "fundo": true,
+  "medidas": {
+    "temp":    { "tipo": "clima", "campo": "temperatura" },
+    "desc":    { "tipo": "clima", "campo": "descricao" },
+    "umidade": { "tipo": "clima", "campo": "umidade" }
+  },
+  "elementos": [
+    { "tipo": "texto", "texto": "CLIMA", "x": 20, "y": 14, "tamanho": 11, "peso": "SemiBold", "cor": "@textoSecundario" },
+    { "tipo": "texto", "texto": "{temp}°", "x": 18, "y": 30, "tamanho": 40, "peso": "Light", "cor": "@texto" },
+    { "tipo": "texto", "texto": "{desc}", "x": 200, "y": 40, "largura": 0, "tamanho": 13, "alinhamento": "direita", "cor": "@texto" },
+    { "tipo": "texto", "texto": "Umidade {umidade}%", "x": 200, "y": 62, "tamanho": 12, "alinhamento": "direita", "cor": "@textoSecundario" }
+  ]
+}

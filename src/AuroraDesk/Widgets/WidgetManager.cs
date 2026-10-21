@@ -28,6 +28,7 @@ internal sealed class WidgetManager : IDisposable
     private readonly Dispatcher _dispatcher;
     private readonly Dictionary<string, Running> _running = new(StringComparer.Ordinal);
     private readonly DispatcherTimer _saveTimer;
+    // Só para validar tipos ao interpretar skins; as instâncias vêm do agendador.
     private readonly MeasureRegistry _registry = MeasureRegistry.CreateDefault();
     private DebouncedWatcher? _watcher;
 
@@ -138,6 +139,7 @@ internal sealed class WidgetManager : IDisposable
         r.Window.ApplyScaleAndOpacity();
         r.Window.ApplyStyles();
         r.Window.ApplyLayer();
+        r.Window.Canvas.OnThemeChanged(); // fonte do widget pode ter mudado
         RequestSave();
     }
 

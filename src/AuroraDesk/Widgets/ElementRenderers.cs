@@ -10,8 +10,11 @@ using AuroraDesk.Theming;
 namespace AuroraDesk.Widgets;
 
 /// <summary>Tudo que um elemento precisa para se desenhar.</summary>
-internal sealed class RenderContext(ThemeService themes, Theme theme, SkinDefinition skin, Func<string, Measure?> resolve, double pixelsPerDip)
+internal sealed class RenderContext(ThemeService themes, Theme theme, SkinDefinition skin, Func<string, Measure?> resolve, double pixelsPerDip, string? instanceFont = null)
 {
+    /// <summary>Ordem de precedência da fonte: elemento → widget (configurações) → skin → tema/global.</summary>
+    private readonly string? _widgetFont = string.IsNullOrWhiteSpace(instanceFont) ? skin.FontFamily : instanceFont;
+
     public ThemeService Themes { get; } = themes;
     public Theme Theme { get; } = theme;
     public SkinDefinition Skin { get; } = skin;
@@ -20,7 +23,7 @@ internal sealed class RenderContext(ThemeService themes, Theme theme, SkinDefini
 
     public SolidColorBrush Brush(string? spec, ArgbColor fallback) => Themes.Brush(Theme.Resolve(spec, fallback));
     public Pen Pen(string? spec, ArgbColor fallback, double thickness) => Themes.Pen(Theme.Resolve(spec, fallback), thickness);
-    public FontFamily Font(string? element) => Themes.Font(element ?? Skin.FontFamily);
+    public FontFamily Font(string? element) => Themes.Font(element ?? _widgetFont);
     public double FontSize(double? element) => element ?? Skin.FontSize ?? Theme.FontSize;
 }
 

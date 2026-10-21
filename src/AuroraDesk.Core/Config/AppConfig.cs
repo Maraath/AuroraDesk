@@ -38,6 +38,8 @@ public sealed class WidgetInstance
     public bool ClickThrough { get; set; }
     public bool Locked { get; set; }
     public bool SnapToEdges { get; set; } = true;
+    /// <summary>Fonte deste widget (sobrescreve a do skin e a do tema). Vazio = herda.</summary>
+    public string? Font { get; set; }
     /// <summary>Nome do dispositivo do monitor (\\.\DISPLAY1). Vazio = principal.</summary>
     public string? Monitor { get; set; }
 }

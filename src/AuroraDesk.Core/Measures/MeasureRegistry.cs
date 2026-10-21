@@ -8,9 +8,12 @@ public sealed class MeasureRegistry
 {
     private readonly Dictionary<string, Func<MeasureSpec, Measure>> _factories = new(StringComparer.OrdinalIgnoreCase);
 
-    public static MeasureRegistry CreateDefault()
+    /// <param name="weather">Fonte do clima (compartilhada). Sem ela, o clima fica sempre desligado.</param>
+    public static MeasureRegistry CreateDefault(WeatherSource? weather = null)
     {
         var r = new MeasureRegistry();
+        weather ??= new WeatherSource();
+        r.Register("clima", s => new WeatherMeasure(s, weather));
         r.Register("cpu", s => new CpuMeasure(s));
         r.Register("memoria", s => new MemoryMeasure(s));
         r.Register("ram", s => new MemoryMeasure(s));

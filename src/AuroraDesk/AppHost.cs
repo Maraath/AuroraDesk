@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Threading;
+using AuroraDesk.Core.Backup;
 using AuroraDesk.Core.Config;
 using AuroraDesk.Core.Formatting;
 using AuroraDesk.Core.Logging;
@@ -11,6 +12,7 @@ using AuroraDesk.Core.Theming;
 using AuroraDesk.Dock;
 using AuroraDesk.Infrastructure;
 using AuroraDesk.Interop;
+using AuroraDesk.Settings;
 using AuroraDesk.Theming;
 using AuroraDesk.Tray;
 using AuroraDesk.Widgets;
@@ -41,16 +43,26 @@ internal sealed class AppHost : IDisposable
         if (!Config.Performance.HardwareRendering)
             System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
 
-        Scheduler = new MeasureScheduler(MeasureRegistry.CreateDefault(),
+        ApplyWeather(save: false);
+        Scheduler = new MeasureScheduler(MeasureRegistry.CreateDefault(Weather),
             action => Dispatcher.BeginInvoke(DispatcherPriority.Background, action));
         Control = new ControlWindow();
         Tray = new TrayIcon(Control, "Aurora Desk");
         Themes = new ThemeService(Config, new ThemeStore(Paths.Themes), new FontService(Paths.Fonts));
         Widgets = new WidgetManager(this);
         Dock = new DockManager(this);
+        var registry = new UserRegistry();
+        Backup = new OriginalValues(Path.Combine(Paths.Backup, "windows-original.json"), registry);
+        Startup = new StartupRegistration(Backup, registry);
+        Trimmer = new MemoryTrimmer(Config.Performance, Dispatcher);
     }
 
     public DockManager Dock { get; }
+    public WeatherSource Weather { get; } = new();
+    public OriginalValues Backup { get; }
+    public StartupRegistration Startup { get; }
+    public MemoryTrimmer Trimmer { get; }
+    private SettingsWindow? _settings;
 
     public Dispatcher Dispatcher { get; }
     public AppPaths Paths { get; }
@@ -86,6 +98,8 @@ internal sealed class AppHost : IDisposable
         // Medido quando a fila de interface esvazia, isto é, com tudo já visível.
         Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
             Log.Info($"Inicialização concluída em {(DateTime.Now - startedAt).TotalMilliseconds:0} ms"));
+        // A inicialização deixa páginas que não serão mais usadas (JIT, XAML do sistema...).
+        Trimmer.Schedule(TimeSpan.FromSeconds(20));
 
         if (openSettings) OpenSettings();
     }
@@ -156,11 +170,67 @@ internal sealed class AppHost : IDisposable
         menu.Show(Control.Handle, dark: Themes.Current.Dark);
     }
 
+    /// <summary>Abre (ou traz à frente) as configurações. A janela é descartada ao fechar.</summary>
     public void OpenSettings()
     {
-        // Implementada no M5.
-        Log.Info("Configurações solicitadas");
+        if (_settings is not null)
+        {
+            if (_settings.WindowState == WindowState.Minimized) _settings.WindowState = WindowState.Normal;
+            _settings.Activate();
+            return;
+        }
+        _settings = new SettingsWindow(this);
+        _settings.Closed += (_, _) =>
+        {
+            _settings = null;
+            Trimmer.Schedule(TimeSpan.FromSeconds(2), force: Config.Performance.TrimWorkingSet);
+        };
+        _settings.Show();
+        _settings.Activate();
     }
+
+    /// <summary>Aplica a configuração do clima à fonte compartilhada.</summary>
+    public void ApplyWeather(bool save = true)
+    {
+        Weather.Enabled = Config.Weather.Enabled;
+        Weather.Latitude = Config.Weather.Latitude;
+        Weather.Longitude = Config.Weather.Longitude;
+        if (save) SaveConfig();
+    }
+
+    /// <summary>Desfaz tudo que o app mudou no Windows. Devolve quantos itens foram restaurados.</summary>
+    public int RestoreOriginal()
+    {
+        int count = 0;
+        try { count = Backup.RestoreAll(); }
+        catch (Exception ex) { Log.Error("Falha ao restaurar valores originais", ex); }
+        if (Config.Dock.ReserveSpace)
+        {
+            Config.Dock.ReserveSpace = false;
+            Dock.ApplyConfig(); // devolve o espaço reservado (AppBar)
+            count++;
+        }
+        Log.Info($"Restaurar original: {count} item(ns)");
+        return count;
+    }
+
+    /// <summary>Faz backup do perfil atual, importa o novo e reinicia.</summary>
+    public void ImportProfile(string zip)
+    {
+        string backup = Path.Combine(Paths.Backup, $"antes-de-importar-{DateTime.Now:yyyyMMdd-HHmmss}.zip");
+        Core.Profiles.ProfileArchive.Export(backup, Config, Paths);
+        var result = Core.Profiles.ProfileArchive.Import(zip, Paths, Config);
+        Log.Info($"Perfil importado: {result.Files} arquivo(s), {result.Skipped.Count} ignorado(s){(result.Skipped.Count > 0 ? ": " + string.Join(", ", result.Skipped.Take(10)) : "")}");
+        if (result.Config is { } merged)
+        {
+            // Reinicia lendo a configuração importada.
+            ConfigStore.Save(merged);
+            _skipSaveOnExit = true;
+        }
+        RequestRestartFor(() => { });
+    }
+
+    private bool _skipSaveOnExit;
 
     public static void OpenFolder(string path)
     {
@@ -183,7 +253,7 @@ internal sealed class AppHost : IDisposable
     public void RequestRestartFor(Action change)
     {
         change();
-        SaveConfig();
+        if (!_skipSaveOnExit) SaveConfig();
         try
         {
             Process.Start(new ProcessStartInfo(Environment.ProcessPath!, $"--reiniciar {Environment.ProcessId}") { UseShellExecute = false });
@@ -198,7 +268,8 @@ internal sealed class AppHost : IDisposable
 
     public void Dispose()
     {
-        SaveConfig();
+        _settings?.Close();
+        if (!_skipSaveOnExit) SaveConfig();
         Dock.Dispose();
         Widgets.Dispose();
         _themeWatcher?.Dispose();

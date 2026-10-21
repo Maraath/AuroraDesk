@@ -9,3 +9,4 @@ Geradas por `tools\medir.ps1` (60 s, app publicado em Release com ReadyToRun). C
 | 2026-10-21 15:39 | M2 - temas e fontes (sem widgets) | 56,4 | 75,3 | 15,7 | 0,00 | 0,13 | 432 | 13 | 1471 |
 | 2026-10-21 15:51 | M3 - 4 widgets (relógio, sistema, rede, bateria) | 61,3 | 96,5 | 19,8 | 0,06 | 0,39 | 483 | 18 | 1222 |
 | 2026-10-21 16:03 | M4 - dock + 4 widgets | 62,1 | 101,5 | 23,0 | 0,10 | 0,65 | 507 | 20 | 812 |
+| 2026-10-21 16:17 | M5 - dock + 4 widgets + configurações (fechada) | 62,1 | 25,2 | 8,1 | 0,05 | 0,65 | 506 | 19 | 725 |
