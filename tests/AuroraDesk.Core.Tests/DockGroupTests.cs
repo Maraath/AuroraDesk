@@ -69,4 +69,18 @@ public class DockGroupTests
         Assert.Equal("Trabalho", lg.Name);
         Assert.Equal(@"C:\x\app.exe", Assert.Single(lg.Items!).Path);
     }
+
+    [Fact]
+    public void CamposDeVersaoMaisNovaSobrevivemAoSalvar()
+    {
+        // Uma versão antiga não pode apagar o que uma mais nova gravou (ex.: grupos, ilhas).
+        const string json = """
+            { "futuro": 1, "dock": { "ilhaNova": ["x"], "items": [ { "kind": "grupo", "name": "G", "corDoGrupo": "#fff" } ] } }
+            """;
+        var config = ConfigStore.Deserialize(json)!;
+        string saved = ConfigStore.Serialize(config);
+        Assert.Contains("\"futuro\": 1", saved);
+        Assert.Contains("\"ilhaNova\"", saved);
+        Assert.Contains("\"corDoGrupo\": \"#fff\"", saved);
+    }
 }

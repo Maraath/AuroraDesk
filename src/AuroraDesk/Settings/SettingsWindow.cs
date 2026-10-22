@@ -382,7 +382,7 @@ internal sealed class SettingsWindow : Window
             Ui.Row("   Cor de destaque do Windows = destaque do tema", Ui.Toggle(ws.Accent, v => Style(() => ws.Accent = v))),
             Ui.Row("   Cor de destaque nas barras de título e bordas", Ui.Toggle(ws.AccentOnTitleBars, v => Style(() => ws.AccentOnTitleBars = v))),
             Ui.Row("   Devolver as cores originais ao fechar o Aurora", Ui.Toggle(ws.RestoreOnExit, v => Style(() => ws.RestoreOnExit = v)),
-                "Desligado: o Windows continua com as cores do tema mesmo com o Aurora fechado.")));
+                "Padrão: desligado. O Windows e as janelas abertas continuam com as cores do tema mesmo com o Aurora fechado; janelas abertas depois só ganham a moldura com ele aberto.")));
         page.Children.Add(Ui.Card(
             Ui.Row("Barra de título, abas e borda das janelas nas cores do tema", Ui.Toggle(ws.FrameColors, v => Style(() => ws.FrameColors = v)),
                 "No Explorador de Arquivos, pinta a faixa das abas. Feito pelo gerenciador de janelas do Windows, sem entrar nos programas. Apps que desenham a própria barra mostram só a borda."),

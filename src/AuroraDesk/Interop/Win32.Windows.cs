@@ -148,9 +148,61 @@ internal static unsafe partial class Win32
     [LibraryImport("user32.dll")]
     private static partial uint SendInput(uint count, INPUT* inputs, int size);
 
+    [LibraryImport("advapi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool OpenProcessToken(nint process, uint access, out nint token);
+
+    [LibraryImport("advapi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetTokenInformation(nint token, int infoClass, out int info, int length, out int returned);
+
+    /// <summary>Janela do app que recebe o foco antes de simular teclas (ver <see cref="PrepareInput"/>).</summary>
+    public static nint InputAnchor { get; set; }
+
+    private static bool? _selfElevated;
+
+    /// <summary>true = elevado, false = não, null = não deu para saber (sem acesso).</summary>
+    private static bool? IsElevated(nint process)
+    {
+        const uint TOKEN_QUERY = 8;
+        const int TokenElevation = 20;
+        if (!OpenProcessToken(process, TOKEN_QUERY, out nint token)) return null;
+        try { return GetTokenInformation(token, TokenElevation, out int elevated, sizeof(int), out _) ? elevated != 0 : null; }
+        finally { CloseHandle(token); }
+    }
+
+    /// <summary>
+    /// A janela em primeiro plano é de um processo com mais privilégios (ex.: Gerenciador de
+    /// Tarefas)? Nesse caso o Windows (UIPI) descarta em silêncio as teclas simuladas.
+    /// </summary>
+    public static bool ForegroundBlocksInput()
+    {
+        nint fg = GetForegroundWindow();
+        if (fg == 0) return false;
+        GetWindowThreadProcessId(fg, out uint pid);
+        if (pid == (uint)Environment.ProcessId) return false;
+        _selfElevated ??= IsElevated(GetCurrentProcess()) == true;
+        if (_selfElevated == true) return false;
+        const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+        nint h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        if (h == 0) return true; // sem acesso: processo protegido ou elevado
+        try { return IsElevated(h) != false; }
+        finally { CloseHandle(h); }
+    }
+
+    /// <summary>
+    /// Com um app elevado em primeiro plano, põe a janela do Aurora na frente antes de simular
+    /// teclas. O Windows permite porque o usuário acabou de clicar no app.
+    /// </summary>
+    private static void PrepareInput()
+    {
+        if (InputAnchor != 0 && ForegroundBlocksInput()) SetForegroundWindow(InputAnchor);
+    }
+
     /// <summary>Pressiona Win + <paramref name="key"/> (ex.: 'A' configurações rápidas, 'N' notificações).</summary>
     public static void SendWinShortcut(char key)
     {
+        PrepareInput();
         const int INPUT_KEYBOARD = 1;
         const uint KEYEVENTF_KEYUP = 2;
         const ushort VK_LWIN = 0x5B;
@@ -180,6 +232,7 @@ internal static unsafe partial class Win32
     /// <summary>Pressiona e solta uma tecla (código virtual).</summary>
     public static void SendKey(ushort vk)
     {
+        PrepareInput();
         const int INPUT_KEYBOARD = 1;
         const uint KEYEVENTF_KEYUP = 2;
         var inputs = stackalloc INPUT[2];

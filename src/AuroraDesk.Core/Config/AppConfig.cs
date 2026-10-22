@@ -28,6 +28,9 @@ public sealed class AppConfig
     public PerformanceConfig Performance { get; set; } = new();
     public WeatherConfig Weather { get; set; } = new();
     public WindowsStyleConfig WindowsStyle { get; set; } = new();
+    /// <summary>Campos que esta versão não conhece (de uma versão mais nova): lidos e gravados de volta sem perda.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 /// <summary>
@@ -41,13 +44,19 @@ public sealed class WindowsStyleConfig
     public bool DarkMode { get; set; } = true;
     public bool Accent { get; set; } = true;
     public bool AccentOnTitleBars { get; set; } = true;
-    /// <summary>Ao fechar o Aurora, devolver as cores originais do Windows.</summary>
-    public bool RestoreOnExit { get; set; } = true;
+    /// <summary>
+    /// Ao fechar o Aurora, devolver as cores originais do Windows. Padrão: não. As cores são
+    /// do próprio Windows e continuam valendo sem o app ("Restaurar original" as devolve).
+    /// </summary>
+    public bool RestoreOnExit { get; set; }
 
     /// <summary>Pinta a barra de título/abas e a borda das janelas com as cores do tema.</summary>
     public bool FrameColors { get; set; }
     /// <summary>"todas" ou "explorer" (só o Explorador de Arquivos).</summary>
     public string FrameScope { get; set; } = "todas";
+    /// <summary>Campos que esta versão não conhece (de uma versão mais nova): lidos e gravados de volta sem perda.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 public sealed class WidgetInstance
@@ -68,6 +77,9 @@ public sealed class WidgetInstance
     public string? Font { get; set; }
     /// <summary>Nome do dispositivo do monitor (\\.\DISPLAY1). Vazio = principal.</summary>
     public string? Monitor { get; set; }
+    /// <summary>Campos que esta versão não conhece (de uma versão mais nova): lidos e gravados de volta sem perda.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 public sealed class DockConfig
@@ -130,6 +142,9 @@ public sealed class DockConfig
 
     public static readonly string[] AllLeftItems = ["cpu", "ram", "disco", "rede", "clima", "bateria"];
     public static readonly string[] AllRightItems = ["aurora", "conexao", "volume", "bateria", "relogio"];
+    /// <summary>Campos que esta versão não conhece (de uma versão mais nova): lidos e gravados de volta sem perda.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 public sealed class DockItem
@@ -144,6 +159,9 @@ public sealed class DockItem
 
     [JsonIgnore]
     public bool IsGroup => Kind == "grupo";
+    /// <summary>Campos que esta versão não conhece (de uma versão mais nova): lidos e gravados de volta sem perda.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 /// <summary>Operações dos grupos de atalhos do dock (puras, sobre a lista de itens fixados).</summary>
@@ -208,6 +226,9 @@ public sealed class PerformanceConfig
     /// (NVIDIA/Intel) no processo, o que custa ~100 MB de RAM. Exige reiniciar o app.
     /// </summary>
     public bool HardwareRendering { get; set; }
+    /// <summary>Campos que esta versão não conhece (de uma versão mais nova): lidos e gravados de volta sem perda.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 public sealed class WeatherConfig
@@ -216,6 +237,9 @@ public sealed class WeatherConfig
     public double Latitude { get; set; } = -23.55;
     public double Longitude { get; set; } = -46.63;
     public string City { get; set; } = "São Paulo";
+    /// <summary>Campos que esta versão não conhece (de uma versão mais nova): lidos e gravados de volta sem perda.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
 [JsonSourceGenerationOptions(

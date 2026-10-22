@@ -77,6 +77,18 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
 
 - **Grupos de atalhos**: o ícone com 4 miniaturas foi conferido em captura. O painel do grupo foi testado pelo usuário com o mouse real e aprovado.
 
+- **Correções da lista de erros do usuário**:
+  - Cores do Windows depois de fechar: com "devolver ao fechar" desligado (o novo padrão), o registro continuou com modo escuro, `ColorPrevalence` 1 e destaque `#CBA6F7` depois de `--sair` e ao reabrir.
+  - Mudanças que "sumiam": ligar "Disco C:" pela UI Automation gravou o `config.json` na hora, e o valor sobreviveu a `--sair` e à reabertura.
+    - Causa provável: durante as atualizações, versões diferentes do app gravavam o mesmo `config.json`, e uma versão mais antiga apagava os campos que não conhecia.
+    - Correção: agora campos desconhecidos são preservados (`[JsonExtensionData]`, com teste), e o dock grava antes de redesenhar.
+  - Atalhos dos grupos que não abriam: os 13 `.lnk`/`.url` originais tinham ido para a Lixeira.
+    - O dock agora guarda uma cópia em `%APPDATA%\AuroraDesk\atalhos` ao fixar, e os itens antigos também ganham cópia ao iniciar.
+    - Os 15 atalhos deste PC foram copiados da Lixeira para essa pasta e todos os 19 itens apontam para arquivos existentes.
+  - Gerenciador de Tarefas em primeiro plano: ele é elevado, e o Windows (UIPI) descarta em silêncio as teclas simuladas (Win+A/N/B).
+    - Correção: antes de simular teclas, se a janela da frente for elevada, o Aurora põe a própria janela na frente.
+    - Não verificado com clique real.
+
 Não verificado (ou verificado só parcialmente):
 
 - Molduras em janelas novas do Explorer: o Windows deste PC abre pastas como abas da janela existente, então o caminho "janela nova" foi coberto pela reaplicação ao iniciar e ao ganhar o foco, não por uma janela nova de fato.

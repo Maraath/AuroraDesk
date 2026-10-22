@@ -17,12 +17,14 @@ public sealed class AppPaths
     public string Themes => Path.Combine(Roaming, "themes");
     public string Fonts => Path.Combine(Roaming, "fonts");
     public string Backup => Path.Combine(Roaming, "backup");
+    /// <summary>Cópias dos atalhos (.lnk/.url) fixados no dock: continuam abrindo se o original for apagado.</summary>
+    public string Shortcuts => Path.Combine(Roaming, "atalhos");
     public string Logs => Path.Combine(Local, "logs");
     public string IconCache => Path.Combine(Local, "cache", "icons");
 
     public void EnsureCreated()
     {
-        foreach (var dir in new[] { Roaming, Widgets, Themes, Fonts, Backup, Logs, IconCache })
+        foreach (var dir in new[] { Roaming, Widgets, Themes, Fonts, Backup, Shortcuts, Logs, IconCache })
             Directory.CreateDirectory(dir);
     }
 }

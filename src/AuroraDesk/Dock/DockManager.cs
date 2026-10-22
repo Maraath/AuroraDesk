@@ -18,6 +18,7 @@ internal sealed partial class DockManager : IDisposable
 {
     private readonly AppHost _host;
     private readonly IconCache _icons;
+    private readonly ShortcutKeeper _shortcuts;
     private readonly DispatcherTimer _hideTimer;
     private readonly Dictionary<DockItem, (AppIdentity Identity, string Name, string? Icon)> _resolved = [];
     private readonly Dictionary<string, string> _exeNames = new(StringComparer.OrdinalIgnoreCase);
@@ -31,6 +32,7 @@ internal sealed partial class DockManager : IDisposable
     {
         _host = host;
         _icons = new IconCache(host.Paths.IconCache);
+        _shortcuts = new ShortcutKeeper(host.Paths.Shortcuts);
         _hideTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(700), DispatcherPriority.Background, (_, _) => { _hideTimer!.Stop(); HideNow(); }, host.Dispatcher) { IsEnabled = false };
     }
 
@@ -46,6 +48,8 @@ internal sealed partial class DockManager : IDisposable
             Config.Initialized = true;
             _host.SaveConfig();
         }
+        // Atalhos fixados antes desta versão também ganham uma cópia guardada.
+        if (_shortcuts.KeepAll(Config.Items)) _host.SaveConfig();
         _host.Themes.Changed += OnThemeChanged;
         _host.Control.Message += OnControlMessage;
         if (_host.State is { } state) state.Changed += OnStateChanged;
@@ -83,6 +87,7 @@ internal sealed partial class DockManager : IDisposable
         ApplySurfaceSettings();
         _window.Show();
         _window.ApplyBackdrop(_host.Themes.Current.Panel);
+        Win32.InputAnchor = _window.Handle; // Win+A/N/B continuam funcionando com um app elevado na frente
 
         if (_running.All.Count == 0) _running.Start();
         Rebuild();
@@ -96,6 +101,7 @@ internal sealed partial class DockManager : IDisposable
         _hideTimer.Stop();
         if (_running is not null) _running.Changed -= Rebuild;
         CloseIslands();
+        Win32.InputAnchor = 0;
         _window.Close(); // devolve o espaço da AppBar
         _window = null;
         _layoutKey = "";
@@ -310,6 +316,7 @@ internal sealed partial class DockManager : IDisposable
     /// <summary>Reaplica a configuração (chamado pelo menu e pelas configurações).</summary>
     public void ApplyConfig()
     {
+        SaveChanges(); // antes de redesenhar: um erro ao desenhar não pode perder a mudança
         if (!Config.Enabled) { Close(); return; }
         if (_window is not null && _window.UsesBackdrop != (Config.Backdrop is "acrilico" or "desfoque"))
         {
@@ -322,7 +329,6 @@ internal sealed partial class DockManager : IDisposable
         Rebuild();
         ShowIslands(); // itens, borda ou estilo podem ter mudado
         if (AutoHideActive) { _hideTimer.Stop(); _hideTimer.Start(); }
-        _host.SaveConfig();
     }
 
     private void OnThemeChanged()
@@ -446,8 +452,15 @@ internal sealed partial class DockManager : IDisposable
 
     private void Changed()
     {
+        SaveChanges();
         _layoutKey = "";
         Rebuild();
+    }
+
+    /// <summary>Guarda uma cópia dos atalhos novos (.lnk/.url) e grava a configuração.</summary>
+    private void SaveChanges()
+    {
+        if (_shortcuts.KeepAll(Config.Items)) _resolved.Clear(); // caminhos mudaram: resolve de novo
         _host.SaveConfig();
     }
 

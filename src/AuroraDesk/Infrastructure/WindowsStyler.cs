@@ -192,7 +192,10 @@ internal sealed unsafe class WindowsStyler : IDisposable
     /// <summary>COLORREF = 0x00BBGGRR.</summary>
     private static uint ColorRef(ArgbColor c) => (uint)(c.B << 16 | c.G << 8 | c.R);
 
-    /// <summary>Ao fechar o app: molduras voltam ao padrão e, se configurado, as cores originais.</summary>
+    /// <summary>
+    /// Ao fechar o app, só com "devolver ao fechar" ligado: molduras ao padrão e cores originais.
+    /// Desligado (padrão), tudo continua como está; janelas abertas depois ficam sem moldura.
+    /// </summary>
     public void Dispose()
     {
         _debounce.Stop();
@@ -200,8 +203,9 @@ internal sealed unsafe class WindowsStyler : IDisposable
         Hook(false);
         try
         {
+            if (!Options.RestoreOnExit) return;
             ClearFrames();
-            if (Options.RestoreOnExit) RestoreColors();
+            RestoreColors();
         }
         catch (Exception ex)
         {
