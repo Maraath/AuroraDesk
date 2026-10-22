@@ -30,9 +30,11 @@ public static class PackagedApps
     public static string? FindAppId(string family, IEnumerable<string> startApps) =>
         startApps.FirstOrDefault(a => a.StartsWith(family + "!", StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>Itens (e atalhos dentro de grupos) que ainda apontam para um exe em WindowsApps.</summary>
-    public static bool NeedsMigration(IEnumerable<DockItem> items) =>
-        items.Any(i => i.IsGroup ? NeedsMigration(i.Items ?? []) : i.Kind == "arquivo" && FamilyName(i.Path) is not null);
+    /// <summary>Caminhos de itens (e de atalhos dentro de grupos) que ainda apontam para um exe em WindowsApps.</summary>
+    public static IEnumerable<string> Candidates(IEnumerable<DockItem> items) =>
+        items.SelectMany(i => i.IsGroup ? Candidates(i.Items ?? []) : i.Kind == "arquivo" && FamilyName(i.Path) is not null ? [i.Path] : []);
+
+    public static bool NeedsMigration(IEnumerable<DockItem> items) => Candidates(items).Any();
 
     /// <summary>Troca o caminho com versão pelo AppUserModelID ("app"). Devolve se algo mudou.</summary>
     public static bool Migrate(IEnumerable<DockItem> items, IReadOnlyCollection<string> startApps)

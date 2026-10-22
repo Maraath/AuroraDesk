@@ -34,6 +34,17 @@ public class PackagedAppsTests
     }
 
     [Fact]
+    public void JanelaQueSoInformaOExeEhOMesmoAppFixadoPeloId()
+    {
+        var fixado = new AppIdentity("Claude_pzs8sxrjxfjjc!Claude", null);
+        var janela = new AppIdentity(null, @"C:\Program Files\WindowsApps\Claude_3.6556.1.0_x64__pzs8sxrjxfjjc\app\claude.exe");
+        Assert.True(fixado.Matches(janela));
+        Assert.True(janela.Matches(fixado));
+        Assert.False(new AppIdentity("Outro_pzs8sxrjxfjjc!App", null).Matches(new AppIdentity(null, @"C:\Program Files\WindowsApps\Claudex_1.0.0.0_x64__pzs8sxrjxfjjc\a.exe")));
+        Assert.False(fixado.Matches(new AppIdentity(null, @"C:\Program Files\Google\Chrome\Application\chrome.exe")));
+    }
+
+    [Fact]
     public void SemAppNoMenuIniciarFicaComoEsta()
     {
         var item = new DockItem { Path = Antigo };

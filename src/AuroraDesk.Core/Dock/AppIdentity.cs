@@ -13,9 +13,17 @@ public readonly record struct AppIdentity(string? AppId, string? ExePath)
     {
         if (!string.IsNullOrEmpty(AppId) && !string.IsNullOrEmpty(other.AppId))
             return string.Equals(AppId, other.AppId, StringComparison.OrdinalIgnoreCase);
+        // App da Store fixado pelo AppUserModelID e janela que só informa o exe (ex.: Claude, em
+        // Electron): o mesmo app se o exe está na pasta do pacote dessa família.
+        if (SamePackage(this, other) || SamePackage(other, this)) return true;
         return !string.IsNullOrEmpty(ExePath) && !string.IsNullOrEmpty(other.ExePath)
             && string.Equals(NormalizePath(ExePath), NormalizePath(other.ExePath), StringComparison.OrdinalIgnoreCase);
     }
+
+    private static bool SamePackage(AppIdentity withId, AppIdentity withExe) =>
+        !string.IsNullOrEmpty(withId.AppId) && string.IsNullOrEmpty(withExe.AppId) && !string.IsNullOrEmpty(withExe.ExePath)
+        && PackagedApps.FamilyName(withExe.ExePath) is { } family
+        && withId.AppId.StartsWith(family + "!", StringComparison.OrdinalIgnoreCase);
 
     public static string NormalizePath(string path)
     {

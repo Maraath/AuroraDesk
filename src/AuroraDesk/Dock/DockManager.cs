@@ -459,11 +459,12 @@ internal sealed partial class DockManager : IDisposable
             : new DockItem { Kind = "arquivo", Path = id.ExePath ?? "", Name = e.Name };
         if (item.Path.Length == 0) return;
         Config.Items.Add(item);
-        Changed();
-        MigratePackagedApps(); // app da Store fixado pelo exe (ex.: Claude): troca pelo AppUserModelID
+        Changed(); // app da Store fixado pelo exe (ex.: Claude) vira AppUserModelID ao gravar
     }
 
     private bool _migratingPackaged;
+    /// <summary>Caminhos já procurados no menu Iniciar sem sucesso: não refaz a busca a cada gravação.</summary>
+    private readonly HashSet<string> _packagedTried = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Apps da Store fixados pelo caminho do exe (com a versão no nome da pasta) passam a ser
@@ -472,13 +473,17 @@ internal sealed partial class DockManager : IDisposable
     /// </summary>
     private void MigratePackagedApps()
     {
-        if (_migratingPackaged || !PackagedApps.NeedsMigration(Config.Items)) return;
+        if (_migratingPackaged) return;
+        var pending = PackagedApps.Candidates(Config.Items).Where(p => !_packagedTried.Contains(p)).ToList();
+        if (pending.Count == 0) return;
         _migratingPackaged = true;
         Task.Run(() => ShellInterop.ListStartApps().Select(a => a.ParsingName).ToList()).ContinueWith(t =>
         {
             _migratingPackaged = false;
             if (t.IsFaulted) { Log.Error("Não foi possível listar os apps do menu Iniciar", t.Exception); return; }
-            if (!PackagedApps.Migrate(Config.Items, t.Result)) return;
+            bool changed = PackagedApps.Migrate(Config.Items, t.Result);
+            _packagedTried.UnionWith(PackagedApps.Candidates(Config.Items)); // os que sobraram não estão no menu Iniciar
+            if (!changed) return;
             Log.Info("Apps da Store fixados pelo caminho passaram a abrir pelo AppUserModelID");
             _resolved.Clear();
             Changed();
@@ -504,6 +509,7 @@ internal sealed partial class DockManager : IDisposable
     {
         if (_shortcuts.KeepAll(Config.Items)) _resolved.Clear(); // caminhos mudaram: resolve de novo
         _host.SaveConfig();
+        MigratePackagedApps(); // qualquer atalho novo de app da Store (dock, grupo, configurações)
     }
 
     // ---------- menus ----------
