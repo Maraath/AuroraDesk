@@ -124,6 +124,13 @@ internal sealed class AppHost : IDisposable
         Trimmer.Schedule(TimeSpan.FromSeconds(20));
 
         if (openSettings) OpenSettings();
+
+        if (ConfigStore.ReadOnly)
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => MessageBox.Show(
+                "Não foi possível ler a sua configuração (o arquivo estava em uso por outro programa).\n\n" +
+                "O Aurora abriu com o padrão e NÃO vai salvar nada, para não apagar seus grupos e ajustes. " +
+                "Feche o Aurora e abra de novo.",
+                "Aurora Desk", MessageBoxButton.OK, MessageBoxImage.Warning));
     }
 
     private bool OnControlMessage(int msg, nint wParam, nint lParam)

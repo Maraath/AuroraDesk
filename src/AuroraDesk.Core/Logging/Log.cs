@@ -30,18 +30,27 @@ public static class Log
         var path = _path;
         if (path is null) return;
         string line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} [{level}] {message}{Environment.NewLine}";
+        byte[] bytes = Encoding.UTF8.GetBytes(line);
         lock (Gate)
         {
-            try
+            // Compartilhado e com novas tentativas: um antivírus ou indexador lendo o arquivo
+            // não pode fazer o log perder justamente a linha do erro.
+            for (int attempt = 0; attempt < 5; attempt++)
             {
-                var info = new FileInfo(path);
-                if (info.Exists && info.Length > MaxBytes)
-                    File.Move(path, path + ".1", overwrite: true);
-                File.AppendAllText(path, line, Encoding.UTF8);
-            }
-            catch
-            {
-                // Log nunca pode derrubar o app.
+                try
+                {
+                    var info = new FileInfo(path);
+                    if (info.Exists && info.Length > MaxBytes)
+                        File.Move(path, path + ".1", overwrite: true);
+                    using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete);
+                    stream.Write(bytes);
+                    return;
+                }
+                catch
+                {
+                    // Log nunca pode derrubar o app.
+                    Thread.Sleep(20);
+                }
             }
         }
     }

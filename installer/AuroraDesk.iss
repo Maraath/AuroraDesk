@@ -1,4 +1,4 @@
-﻿; Instalador do Aurora Desk (Inno Setup 6).
+; Instalador do Aurora Desk (Inno Setup 6).
 ; Gerado por tools\instalador.ps1, que publica o app AUTOCONTIDO (com o .NET 10 Desktop Runtime
 ; embutido) em artifacts\publish-autocontido e compila este script.
 ;
@@ -8,7 +8,7 @@
 ; - Ao desinstalar, remove a inicialização com o Windows e pergunta se apaga as configurações.
 
 #ifndef AppVersion
-  #define AppVersion "0.1.0"
+  #define AppVersion "0.1.1"
 #endif
 #ifndef SourceDir
   #define SourceDir "..\artifacts\publish-autocontido"
