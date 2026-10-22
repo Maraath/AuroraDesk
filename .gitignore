@@ -484,3 +484,8 @@ $RECYCLE.BIN/
 # Aurora Desk
 artifacts/
 
+
+# Arquivos de trabalho com o Claude Code (ficam só no PC)
+CLAUDE.md
+PROMPT-AuroraDesk.md
+.claude/

@@ -8,6 +8,18 @@ Widgets de área de trabalho (no estilo do Rainmeter), um dock de aplicativos (n
 - **Perfis** exportáveis (.zip), **iniciar com o Windows** e **Restaurar original**.
 - Sem telemetria e sem rede, exceto o clima (desligado por padrão). Não exige administrador.
 
+## Baixar e instalar
+
+1. Baixe o `AuroraDesk-Setup-<versão>.exe` na página de [Releases](https://github.com/Maraath/AuroraDesk/releases/latest).
+2. Execute. O instalador não pede administrador e já traz o .NET embutido: não precisa instalar mais nada.
+3. **Aviso do Windows (SmartScreen):** como o instalador não tem assinatura digital paga, o Windows pode mostrar "O Windows protegeu o computador". Clique em **Mais informações → Executar assim mesmo**. O código-fonte está todo aqui, e o instalador é gerado por `tools\instalador.ps1`.
+
+Bom saber antes de abrir:
+
+- Por padrão, o Aurora **oculta a barra de tarefas do Windows** enquanto está aberto, e o dock assume o lugar dela. Ao fechar o app (ou se ele cair), a barra volta. Dá para desligar no menu do dock ou em Configurações.
+- Se ligar "Sincronizar as cores do Windows com o tema", o modo escuro e a cor de destaque do Windows mudam. **Configurações → Geral → Restaurar original** desfaz tudo que o app mudou no Windows.
+- Para desinstalar: **Configurações do Windows → Aplicativos instalados → Aurora Desk**. Seus widgets, temas e configurações ficam em `%APPDATA%\AuroraDesk` (o desinstalador pergunta se deve apagá-los).
+
 ## Consumo medido
 
 O script `tools\medir.ps1` publica o app em Release, deixa-o ocioso por 60 s com o dock e 4 widgets e lê os números. O histórico completo está em [docs/medicoes.md](docs/medicoes.md).
@@ -327,7 +339,7 @@ O script mostra Private Bytes, Working Set (total, pico e privado), CPU média o
 src/AuroraDesk.Core/   núcleo sem interface (testável): medidas, agendador, skins, temas, perfis,
                        importador do Rainmeter, layout do dock, configuração, log
 src/AuroraDesk/        app WPF: bandeja, widgets, dock, configurações, interop Win32/COM
-tests/                 106 testes do núcleo
+tests/                 138 testes do núcleo
 tools/                 publicar.ps1, medir.ps1, experimentos.ps1, capturar.ps1, gerar-icone.ps1
 docs/medicoes.md       histórico de medições
 ```
@@ -337,3 +349,7 @@ docs/medicoes.md       histórico de medições
 - O que foi verificado e o que não foi está na seção "Verificação" de [docs/medicoes.md](docs/medicoes.md).
 - A pausa por tela bloqueada e monitor desligado usa as notificações oficiais do Windows, mas não foi testada travando a sessão durante o desenvolvimento.
 - Arrastar um app direto do menu Iniciar para o dock não funciona: o menu Iniciar não fornece um arquivo. Fixe pelo menu do app em execução ("Fixar no dock") ou arraste o atalho.
+
+## Licença
+
+[MIT](LICENSE): use, modifique e redistribua à vontade, mantendo o aviso de autoria.
