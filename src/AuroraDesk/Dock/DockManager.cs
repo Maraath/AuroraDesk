@@ -359,15 +359,23 @@ internal sealed partial class DockManager : IDisposable
         if (index < 0 || index >= _entries.Count) return;
         var e = _entries[index];
         if (e.IsSearch) { ToggleSearch(); return; } // pesquisa do Aurora, acima do dock
-        if (button == MouseButton.Middle || !e.IsRunning) { Launch(e); return; }
+        var windows = LiveWindows(e);
+        if (button == MouseButton.Middle || windows.Count == 0) { Launch(e); return; }
 
-        var windows = e.Windows;
         nint fg = Win32.GetForegroundWindow();
         int current = windows.FindIndex(w => w.Handle == fg);
         if (windows.Count == 1 && current == 0 && !Win32.IsIconic(fg))
             Win32.ShowWindow(fg, Win32.SW_MINIMIZE); // clicar no app ativo minimiza
         else
             Activate(windows[(current + 1) % windows.Count].Handle); // senão, traz (ou alterna entre janelas)
+    }
+
+    /// <summary>Janelas da entrada que ainda existem de verdade (tira as "fantasma" antes de agir).</summary>
+    private List<WindowRecord> LiveWindows(DockEntry e)
+    {
+        if (_running is null || e.Windows.Count == 0) return [];
+        _running.Prune(); // se algo mudou, o dock é redesenhado logo depois
+        return e.Windows.Where(w => _running.Contains(w.Handle)).ToList();
     }
 
     private static void Activate(nint hwnd)
@@ -493,20 +501,21 @@ internal sealed partial class DockManager : IDisposable
         {
             var e = _entries[index];
             menu.Item(e.Name, () => { }, enabled: false).Separator();
-            menu.Item(e.IsRunning ? "Abrir nova janela" : "Abrir", () => Launch(e));
-            if (e.IsRunning)
+            var windows = LiveWindows(e);
+            menu.Item(windows.Count > 0 ? "Abrir nova janela" : "Abrir", () => Launch(e));
+            if (windows.Count > 0)
             {
                 var list = new NativeMenu();
-                foreach (var w in e.Windows)
+                foreach (var w in windows)
                 {
                     nint h = w.Handle;
                     string title = Win32.WindowTitle(h);
                     list.Item(title.Length > 60 ? title[..60] + "…" : title.Length == 0 ? e.Name : title, () => Activate(h));
                 }
-                menu.Submenu($"Janelas ({e.Windows.Count})", list);
-                menu.Item(e.Windows.Count > 1 ? $"Fechar {e.Windows.Count} janelas" : "Fechar janela", () =>
+                menu.Submenu($"Janelas ({windows.Count})", list);
+                menu.Item(windows.Count > 1 ? $"Fechar {windows.Count} janelas" : "Fechar janela", () =>
                 {
-                    foreach (var w in e.Windows) Win32.PostMessage(w.Handle, Win32.WM_CLOSE, 0, 0);
+                    foreach (var w in windows) Win32.PostMessage(w.Handle, Win32.WM_CLOSE, 0, 0);
                 });
             }
             if (e.Pinned is { } pinned)

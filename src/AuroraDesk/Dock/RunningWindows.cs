@@ -62,6 +62,25 @@ internal sealed class RunningWindows : IDisposable
         if (changed) { _debounce.Stop(); _debounce.Start(); }
     }
 
+    /// <summary>
+    /// Reavalia todas as janelas conhecidas e tira as que não valem mais. O Explorer cria e
+    /// esconde janelas sem que todo evento chegue; sem isso, o dock mostraria janelas
+    /// "fantasma" e o clique tentaria ativar uma janela que não aparece.
+    /// </summary>
+    public bool Prune()
+    {
+        bool changed = false;
+        foreach (var hwnd in _windows.Keys.ToList())
+        {
+            if (Win32.IsWindow(hwnd) && Evaluate(hwnd) is { } record) _windows[hwnd] = record;
+            else changed |= _windows.Remove(hwnd);
+        }
+        if (changed) { _debounce.Stop(); _debounce.Start(); }
+        return changed;
+    }
+
+    public bool Contains(nint hwnd) => _windows.ContainsKey(hwnd);
+
     /// <summary>Mesmas regras da barra de tarefas: visível, não "cloaked", sem dono, não é janela de ferramenta.</summary>
     private WindowRecord? Evaluate(nint hwnd)
     {
