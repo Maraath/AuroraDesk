@@ -8,6 +8,23 @@ Widgets de área de trabalho (no estilo do Rainmeter), um dock de aplicativos (n
 - **Perfis** exportáveis (.zip), **iniciar com o Windows** e **Restaurar original**.
 - Sem telemetria e sem rede, exceto o clima (desligado por padrão). Não exige administrador.
 
+## Como é
+
+**Dock em três ilhas**, no lugar da barra de tarefas: estatísticas à esquerda, apps e grupos de atalhos no centro, bandeja e relógio à direita.
+
+![Dock do Aurora Desk em três ilhas: CPU, RAM, disco e clima à esquerda; pesquisa, apps fixados e grupos de atalhos no centro; bandeja, Wi-Fi, volume, bateria e relógio à direita](docs/imagens/dock.png)
+
+**Widgets** de área de trabalho: bateria, clima, rede, relógio digital, relógio analógico e monitor do sistema.
+
+![Seis widgets do Aurora Desk com o tema Mocha: bateria, clima, rede, relógio digital, relógio analógico e sistema](docs/imagens/widgets.png)
+
+**Configurações** e **temas** com troca imediata (nas imagens, o tema Mocha):
+
+<p>
+  <img src="docs/imagens/configuracoes-dock.png" alt="Página Dock das configurações" width="49%">
+  <img src="docs/imagens/configuracoes-temas.png" alt="Página Temas das configurações, com Grafite, Mocha e Neve" width="49%">
+</p>
+
 ## Baixar e instalar
 
 1. Baixe o `AuroraDesk-Setup-<versão>.exe` na página de [Releases](https://github.com/Maraath/AuroraDesk/releases/latest).
