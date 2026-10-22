@@ -50,6 +50,7 @@ internal sealed partial class DockManager : IDisposable
         }
         // Atalhos fixados antes desta versão também ganham uma cópia guardada.
         if (_shortcuts.KeepAll(Config.Items)) _host.SaveConfig();
+        MigratePackagedApps();
         _host.Themes.Changed += OnThemeChanged;
         _host.Control.Message += OnControlMessage;
         if (_host.State is { } state) state.Changed += OnStateChanged;
@@ -393,6 +394,16 @@ internal sealed partial class DockManager : IDisposable
     /// <summary>Abre um atalho fixado (ou, sem item, o executável de um app em execução).</summary>
     internal void LaunchItem(DockItem? item, string? exePath, string name)
     {
+        // App da Store cujo exe sumiu numa atualização: resolve o AppUserModelID na hora.
+        if (item is { Kind: "arquivo" } && PackagedApps.FamilyName(item.Path) is not null && !File.Exists(item.Path))
+        {
+            try
+            {
+                var apps = Task.Run(() => ShellInterop.ListStartApps().Select(a => a.ParsingName).ToList()).GetAwaiter().GetResult();
+                if (PackagedApps.Migrate([item], apps)) { _resolved.Clear(); Changed(); }
+            }
+            catch (Exception ex) { Log.Error("Não foi possível listar os apps do menu Iniciar", ex); }
+        }
         try
         {
             ProcessStartInfo psi = item?.Kind switch
@@ -449,6 +460,29 @@ internal sealed partial class DockManager : IDisposable
         if (item.Path.Length == 0) return;
         Config.Items.Add(item);
         Changed();
+        MigratePackagedApps(); // app da Store fixado pelo exe (ex.: Claude): troca pelo AppUserModelID
+    }
+
+    private bool _migratingPackaged;
+
+    /// <summary>
+    /// Apps da Store fixados pelo caminho do exe (com a versão no nome da pasta) passam a ser
+    /// abertos pelo AppUserModelID, que sobrevive às atualizações. A lista do menu Iniciar é lida
+    /// fora da interface (~0,5 s) e só quando há algo para converter.
+    /// </summary>
+    private void MigratePackagedApps()
+    {
+        if (_migratingPackaged || !PackagedApps.NeedsMigration(Config.Items)) return;
+        _migratingPackaged = true;
+        Task.Run(() => ShellInterop.ListStartApps().Select(a => a.ParsingName).ToList()).ContinueWith(t =>
+        {
+            _migratingPackaged = false;
+            if (t.IsFaulted) { Log.Error("Não foi possível listar os apps do menu Iniciar", t.Exception); return; }
+            if (!PackagedApps.Migrate(Config.Items, t.Result)) return;
+            Log.Info("Apps da Store fixados pelo caminho passaram a abrir pelo AppUserModelID");
+            _resolved.Clear();
+            Changed();
+        }, TaskScheduler.FromCurrentSynchronizationContext());
     }
 
     private void Unpin(DockItem item)
