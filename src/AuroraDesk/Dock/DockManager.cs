@@ -74,6 +74,8 @@ internal sealed partial class DockManager : IDisposable
         s.ItemMoved += OnItemMoved;
         s.ItemDraggedOut += OnItemDraggedOut;
         s.FilesDropped += OnFilesDropped;
+        s.FilesDroppedOnGroup += OnFilesDroppedOnGroup;
+        s.ItemDroppedOnGroup += OnItemDroppedOnGroup;
         s.MouseEntered += () => { _hideTimer.Stop(); if (s.IsHidden) { s.SetHidden(false); SetIslandsVisible(true); } };
         s.MouseLeft += () => { if (AutoHideActive) { _hideTimer.Stop(); _hideTimer.Start(); } };
         _window.FullscreenChanged += full => { _fullscreen = full; UpdateVisibility(); };
@@ -163,8 +165,13 @@ internal sealed partial class DockManager : IDisposable
 
         int iconPixels = IconPixels();
         foreach (var e in entries)
+        {
             if (!e.IsSeparator && e.IconSource is not null)
                 e.Icon = _icons.Get(e.IconSource, iconPixels);
+            // Grupo: miniaturas dos 4 primeiros atalhos (ícones pequenos, metade do tamanho).
+            if (e.Pinned is { IsGroup: true } g)
+                e.GroupIcons = (g.Items ?? []).Take(4).Select(c => Resolve(c).Item3 is { } src ? _icons.Get(src, Math.Max(32, iconPixels / 2)) : null).ToList();
+        }
 
         _entries = entries;
         _window.Surface.SetEntries(entries);
@@ -195,6 +202,10 @@ internal sealed partial class DockManager : IDisposable
         {
             case "separador":
                 icon = null;
+                break;
+            case "grupo":
+                icon = null;
+                if (name.Length == 0) name = "Grupo";
                 break;
             case "app":
                 identity = new AppIdentity(item.Path, null);
@@ -361,14 +372,20 @@ internal sealed partial class DockManager : IDisposable
 
     private void Launch(DockEntry e)
     {
+        if (e.Pinned is { IsGroup: true }) { ToggleGroup(_entries.IndexOf(e)); return; }
+        LaunchItem(e.Pinned, e.Identity.ExePath, e.Name);
+    }
+
+    /// <summary>Abre um atalho fixado (ou, sem item, o executável de um app em execução).</summary>
+    internal void LaunchItem(DockItem? item, string? exePath, string name)
+    {
         try
         {
-            var item = e.Pinned;
             ProcessStartInfo psi = item?.Kind switch
             {
                 "app" => new ProcessStartInfo("explorer.exe", @"shell:AppsFolder\" + item.Path),
                 "pasta" => new ProcessStartInfo("explorer.exe", $"\"{Environment.ExpandEnvironmentVariables(item.Path)}\""),
-                null => new ProcessStartInfo(e.Identity.ExePath ?? throw new InvalidOperationException("sem executável")),
+                null => new ProcessStartInfo(exePath ?? throw new InvalidOperationException("sem executável")),
                 _ => new ProcessStartInfo(Environment.ExpandEnvironmentVariables(item.Path), item.Arguments ?? ""),
             };
             psi.UseShellExecute = true;
@@ -376,7 +393,7 @@ internal sealed partial class DockManager : IDisposable
         }
         catch (Exception ex)
         {
-            Log.Warn($"Não foi possível abrir '{e.Name}': {ex.Message}");
+            Log.Warn($"Não foi possível abrir '{name}': {ex.Message}");
         }
     }
 
@@ -448,6 +465,17 @@ internal sealed partial class DockManager : IDisposable
                 .Item("Ocultar o botão de pesquisa", () => { Config.SearchButton = false; Changed(); })
                 .Separator();
         }
+        else if (index >= 0 && index < _entries.Count && _entries[index].Pinned is { IsGroup: true } group)
+        {
+            int gi = index;
+            menu.Item(group.Name ?? "Grupo", () => { }, enabled: false).Separator()
+                .Item("Abrir grupo", () => ToggleGroup(gi))
+                .Item("Renomear grupo", () => ToggleGroup(gi, rename: true))
+                .Item("Adicionar atalhos…", () => AddToGroupWithDialog(group))
+                .Item("Desagrupar (atalhos voltam ao dock)", () => { DockGroups.Ungroup(Config.Items, group); Changed(); })
+                .Item("Remover grupo e atalhos", () => Unpin(group))
+                .Separator();
+        }
         else if (index >= 0 && index < _entries.Count && !_entries[index].IsSeparator)
         {
             var e = _entries[index];
@@ -468,7 +496,18 @@ internal sealed partial class DockManager : IDisposable
                     foreach (var w in e.Windows) Win32.PostMessage(w.Handle, Win32.WM_CLOSE, 0, 0);
                 });
             }
-            if (e.Pinned is { } pinned) menu.Item("Desafixar do dock", () => Unpin(pinned));
+            if (e.Pinned is { } pinned)
+            {
+                menu.Item("Desafixar do dock", () => Unpin(pinned));
+                var move = new NativeMenu();
+                foreach (var g in DockGroups.Groups(Config.Items))
+                {
+                    var target = g;
+                    move.Item(g.Name ?? "Grupo", () => { DockGroups.Add(Config.Items, target, pinned); Changed(); });
+                }
+                move.Item("Novo grupo com este atalho", () => { DockGroups.Create(Config.Items, "Grupo", pinned); Changed(); });
+                menu.Submenu("Mover para o grupo", move);
+            }
             else menu.Item("Fixar no dock", () => Pin(e));
             string? location = e.Pinned?.Kind is "arquivo" or "pasta" ? Environment.ExpandEnvironmentVariables(e.Pinned.Path) : e.Pinned is null ? e.Identity.ExePath : null;
             if (location is not null && (File.Exists(location) || Directory.Exists(location)))
@@ -479,6 +518,12 @@ internal sealed partial class DockManager : IDisposable
         {
             menu.Item("Remover separador", () => Unpin(sep)).Separator();
         }
+        menu.Item("Criar grupo de atalhos", () =>
+        {
+            var g = DockGroups.Create(Config.Items, "Grupo");
+            Changed();
+            ToggleGroup(_entries.FindIndex(x => ReferenceEquals(x.Pinned, g)), rename: true);
+        });
         menu.Item("Adicionar separador", () => { Config.Items.Add(new DockItem { Kind = "separador" }); Changed(); });
         menu.Submenu("Configurações do dock", SettingsMenu());
         // Com a barra do Windows oculta, o ícone da bandeja some junto: o dock dá acesso ao app.

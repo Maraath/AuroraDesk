@@ -36,6 +36,7 @@ internal sealed class DockSurface : FrameworkElement
     private Point _pressPoint;
     private bool _dragging;
     private int _insertIndex = -1;
+    private int _dropGroup = -1; // grupo sob o ponteiro ao arrastar (soltar = entrar no grupo)
 
     public DockSurface(ThemeService themes)
     {
@@ -79,6 +80,23 @@ internal sealed class DockSurface : FrameworkElement
     public event Action<int, int>? ItemMoved;
     public event Action<int>? ItemDraggedOut;
     public event Action<string[], int>? FilesDropped;
+    /// <summary>Arquivos soltos em cima de um grupo (índice do grupo).</summary>
+    public event Action<string[], int>? FilesDroppedOnGroup;
+    /// <summary>Atalho do dock arrastado para dentro de um grupo (origem, grupo).</summary>
+    public event Action<int, int>? ItemDroppedOnGroup;
+
+    /// <summary>Grupo cujo centro está sob o ponto (no eixo do dock), ou -1.</summary>
+    private int GroupAt(double main, DockSlot[] slots, double start)
+    {
+        for (int i = 0; i < _entries.Count; i++)
+        {
+            if (!_entries[i].IsGroup) continue;
+            var s = slots[i];
+            double m = main - start;
+            if (m > s.Start + s.Size * 0.2 && m < s.End - s.Size * 0.2) return i;
+        }
+        return -1;
+    }
     public event Action? MouseEntered;
     public event Action? MouseLeft;
 
@@ -175,7 +193,8 @@ internal sealed class DockSurface : FrameworkElement
             var iconRect = R(start + slot.Start, slot.Size, iconEdge, iconEdge + slot.Size);
             hit.Union(iconRect);
             if (_dragging && i == _pressIndex) dc.PushOpacity(0.35);
-            if (e.Glyph is { } glyph) DrawGlyphButton(dc, theme, glyph, iconRect, i == _hover);
+            if (e.IsGroup) DrawGroup(dc, theme, e.GroupIcons ?? [], iconRect, i == _dropGroup);
+            else if (e.Glyph is { } glyph) DrawGlyphButton(dc, theme, glyph, iconRect, i == _hover);
             else if (e.Icon is { } icon) dc.DrawImage(icon, iconRect);
             else dc.DrawRoundedRectangle(_themes.Brush(theme.Surface), null, iconRect, 8, 8);
             if (_dragging && i == _pressIndex) dc.Pop();
@@ -216,6 +235,42 @@ internal sealed class DockSurface : FrameworkElement
             new Typeface(GlyphFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), box.Width * 0.6,
             _themes.Brush(theme.Text), VisualTreeHelper.GetDpi(this).PixelsPerDip);
         dc.DrawText(ft, new Point(box.X + (box.Width - ft.Width) / 2, box.Y + (box.Height - ft.Height) / 2));
+    }
+
+    /// <summary>Grupo de atalhos: quadrado arredondado com até 4 miniaturas (2×2), como as pastas do celular.</summary>
+    private void DrawGroup(DrawingContext dc, Theme theme, IReadOnlyList<System.Windows.Media.Imaging.BitmapSource?> icons, Rect r, bool dropTarget)
+    {
+        double inset = r.Width * 0.06;
+        var box = new Rect(r.X + inset, r.Y + inset, r.Width - 2 * inset, r.Height - 2 * inset);
+        double radius = Math.Min(theme.CornerRadius, box.Width / 3);
+        var border = dropTarget ? _themes.Pen(theme.Accent, 2) : _themes.Pen(theme.Border.WithOpacity(0.8), 1);
+        dc.DrawRoundedRectangle(_themes.Brush(dropTarget ? theme.Accent.WithOpacity(0.25) : theme.Surface), border, box, radius, radius);
+        if (icons.Count == 0)
+        {
+            var ft = new FormattedText("", CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                new Typeface(GlyphFont, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), box.Width * 0.5,
+                _themes.Brush(theme.TextSecondary), VisualTreeHelper.GetDpi(this).PixelsPerDip);
+            dc.DrawText(ft, new Point(box.X + (box.Width - ft.Width) / 2, box.Y + (box.Height - ft.Height) / 2));
+            return;
+        }
+        double pad = box.Width * 0.14, gap = box.Width * 0.06;
+        double cell = (box.Width - 2 * pad - gap) / 2;
+        for (int k = 0; k < Math.Min(4, icons.Count); k++)
+        {
+            var cr = new Rect(box.X + pad + (k % 2) * (cell + gap), box.Y + pad + (k / 2) * (cell + gap), cell, cell);
+            if (icons[k] is { } img) dc.DrawImage(img, cr);
+            else dc.DrawRoundedRectangle(_themes.Brush(theme.Border), null, cr, 3, 3);
+        }
+    }
+
+    /// <summary>Retângulo do ícone <paramref name="index"/> em pixels da tela (para abrir o painel do grupo em cima dele).</summary>
+    public Rect? ItemScreenRect(int index)
+    {
+        if (index < 0 || index >= _entries.Count || PresentationSource.FromVisual(this) is null) return null;
+        var (slots, start, _) = Layout();
+        double iconEdge = EdgeGap + IndicatorBand + Padding;
+        var r = R(start + slots[index].Start, slots[index].Size, iconEdge, iconEdge + slots[index].Size);
+        return new Rect(PointToScreen(r.TopLeft), PointToScreen(r.BottomRight));
     }
 
     private void DrawLabel(DrawingContext dc, Theme theme, string text, double main, double fromEdge)
@@ -301,7 +356,13 @@ internal sealed class DockSurface : FrameworkElement
                 _dragging = true;
                 CaptureMouse();
             }
-            if (_dragging) _insertIndex = DockLayout.InsertIndex(slots, MainOf(p) - start);
+            if (_dragging)
+            {
+                // Em cima do centro de um grupo: soltar coloca o atalho dentro dele.
+                int g = GroupAt(MainOf(p), slots, start);
+                _dropGroup = g != _pressIndex && _entries[_pressIndex].Pinned is { IsGroup: false } ? g : -1;
+                _insertIndex = _dropGroup >= 0 ? -1 : DockLayout.InsertIndex(slots, MainOf(p) - start);
+            }
         }
         InvalidateVisual();
     }
@@ -327,9 +388,10 @@ internal sealed class DockSurface : FrameworkElement
         {
             int from = _pressIndex;
             bool outside = EdgeOf(p) > EdgeGap + PanelThickness + IconSize * 1.5 || EdgeOf(p) < -20;
-            int to = _insertIndex;
+            int to = _insertIndex, group = _dropGroup;
             EndDrag();
-            if (outside) ItemDraggedOut?.Invoke(from);
+            if (group >= 0 && !outside) ItemDroppedOnGroup?.Invoke(from, group);
+            else if (outside) ItemDraggedOut?.Invoke(from);
             else if (to >= 0 && to != from && to != from + 1) ItemMoved?.Invoke(from, to > from ? to - 1 : to);
             return;
         }
@@ -344,6 +406,7 @@ internal sealed class DockSurface : FrameworkElement
         _dragging = false;
         _pressIndex = -1;
         _insertIndex = -1;
+        _dropGroup = -1;
         ReleaseMouseCapture();
         InvalidateVisual();
     }
@@ -358,7 +421,8 @@ internal sealed class DockSurface : FrameworkElement
         var (slots, start, _) = Layout();
         _dragging = true;
         _pressIndex = -1;
-        _insertIndex = DockLayout.InsertIndex(slots, MainOf(e.GetPosition(this)) - start);
+        _dropGroup = GroupAt(MainOf(e.GetPosition(this)), slots, start);
+        _insertIndex = _dropGroup >= 0 ? -1 : DockLayout.InsertIndex(slots, MainOf(e.GetPosition(this)) - start);
         e.Handled = true;
         InvalidateVisual();
     }
@@ -368,17 +432,22 @@ internal sealed class DockSurface : FrameworkElement
         base.OnDragLeave(e);
         _dragging = false;
         _insertIndex = -1;
+        _dropGroup = -1;
         InvalidateVisual();
     }
 
     protected override void OnDrop(DragEventArgs e)
     {
         base.OnDrop(e);
-        int index = _insertIndex;
+        int index = _insertIndex, group = _dropGroup;
         _dragging = false;
         _insertIndex = -1;
+        _dropGroup = -1;
         if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
-            FilesDropped?.Invoke(files, index < 0 ? _entries.Count : index);
+        {
+            if (group >= 0) FilesDroppedOnGroup?.Invoke(files, group);
+            else FilesDropped?.Invoke(files, index < 0 ? _entries.Count : index);
+        }
         InvalidateVisual();
     }
 

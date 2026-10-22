@@ -257,7 +257,7 @@ internal sealed class SettingsWindow : Window
                 "Acrílico e desfoque usam o compositor do Windows sem GPU no app; neles a ampliação e os nomes ficam desligados.")));
 
         page.Children.Add(Ui.Section("Itens fixados"));
-        page.Children.Add(Ui.Note("Também dá para arrastar arquivos, atalhos e pastas para o dock, reordenar arrastando e remover arrastando para fora."));
+        page.Children.Add(Ui.Note("Também dá para arrastar arquivos, atalhos e pastas para o dock, reordenar arrastando e remover arrastando para fora. Grupos: clique direito no dock → \"Criar grupo de atalhos\"; arraste atalhos para cima do grupo para colocá-los dentro."));
         var list = new StackPanel();
         for (int i = 0; i < d.Items.Count; i++)
         {
@@ -268,7 +268,13 @@ internal sealed class SettingsWindow : Window
             buttons.Children.Add(Ui.Button("↑", () => { Move(index, -1); }));
             buttons.Children.Add(Ui.Button("↓", () => { Move(index, 1); }));
             buttons.Children.Add(Ui.Button("Remover", () => { d.Items.RemoveAt(index); _host.Dock.ApplyConfig(); Refresh(); }));
-            list.Children.Add(Ui.Row(label, buttons, item.Kind == "separador" ? null : $"{KindLabel(item.Kind)}: {item.Path}"));
+            string? detail = item.Kind switch
+            {
+                "separador" => null,
+                "grupo" => $"Grupo com {item.Items?.Count ?? 0} atalho(s): {string.Join(", ", (item.Items ?? []).Select(i => i.Name ?? Path.GetFileNameWithoutExtension(i.Path)).Take(6))}",
+                _ => $"{KindLabel(item.Kind)}: {item.Path}",
+            };
+            list.Children.Add(Ui.Row(label, buttons, detail));
         }
         page.Children.Add(Ui.Card(
             list,

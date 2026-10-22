@@ -181,6 +181,83 @@ internal sealed partial class DockManager
 
     private static void QuickSettings() => Win32.SendWinShortcut('A');
 
+    // ---------- grupos de atalhos ----------
+
+    private GroupWindow? _groupWindow;
+    private Core.Config.DockItem? _openGroup;
+
+    /// <summary>Abre (ou fecha, se for o mesmo) o painel do grupo no índice <paramref name="index"/>.</summary>
+    internal void ToggleGroup(int index, bool rename = false)
+    {
+        if (_window is null || index < 0 || index >= _entries.Count || _entries[index].Pinned is not { IsGroup: true } group) return;
+        bool same = ReferenceEquals(_openGroup, group);
+        _groupWindow?.Close();
+        if (same && !rename) return;
+        if (_window.Surface.ItemScreenRect(index) is not { } rect) return;
+
+        int px = IconPixels();
+        var w = new GroupWindow(_host.Themes, group, item =>
+        {
+            var (_, name, icon) = Resolve(item);
+            return (name, icon is null ? null : _icons.Get(icon, px));
+        });
+        w.Launch += item => LaunchItem(item, null, Resolve(item).Item2);
+        w.RemoveItem += item => { Core.Config.DockGroups.Remove(Config.Items, group, item, toDock: false); Changed(); };
+        w.MoveToDock += item => { Core.Config.DockGroups.Remove(Config.Items, group, item, toDock: true); Changed(); };
+        w.FilesAdded += files => { AddFilesToGroup(group, files); };
+        w.Renamed += name => { group.Name = name; _resolved.Remove(group); Changed(); };
+        w.AddRequested += () => AddToGroupWithDialog(group);
+        w.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_groupWindow, w)) { _groupWindow = null; _openGroup = null; }
+            _host.Trimmer.Schedule(TimeSpan.FromSeconds(3));
+        };
+        _groupWindow = w;
+        _openGroup = group;
+        w.ShowNear(rect, Config.Edge != "superior", Win32.MonitorScale(TargetMonitor()));
+        if (rename) w.StartRename();
+    }
+
+    private void AddFilesToGroup(Core.Config.DockItem group, string[] files)
+    {
+        foreach (var f in files)
+        {
+            bool folder = Directory.Exists(f);
+            if (!folder && !File.Exists(f)) continue;
+            Core.Config.DockGroups.Add(Config.Items, group, new Core.Config.DockItem { Kind = folder ? "pasta" : "arquivo", Path = f });
+        }
+        Changed();
+        _groupWindow?.Refresh();
+    }
+
+    private void AddToGroupWithDialog(Core.Config.DockItem group)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = $"Adicionar atalhos ao grupo \"{group.Name}\"", Multiselect = true, DereferenceLinks = false,
+            Filter = "Programas e atalhos|*.exe;*.lnk;*.url|Todos os arquivos|*.*",
+        };
+        if (dialog.ShowDialog() == true) AddFilesToGroup(group, dialog.FileNames);
+    }
+
+    private void OnFilesDroppedOnGroup(string[] files, int index)
+    {
+        if (index >= 0 && index < _entries.Count && _entries[index].Pinned is { IsGroup: true } group) AddFilesToGroup(group, files);
+    }
+
+    private void OnItemDroppedOnGroup(int from, int groupIndex)
+    {
+        if (from < 0 || groupIndex < 0 || from >= _entries.Count || groupIndex >= _entries.Count) return;
+        if (_entries[groupIndex].Pinned is not { IsGroup: true } group) return;
+        if (_entries[from].Pinned is { } item) { Core.Config.DockGroups.Add(Config.Items, group, item); Changed(); }
+        else if (_entries[from].Identity.ExePath is { } exe)
+        {
+            // App aberto mas não fixado: entra no grupo direto.
+            Core.Config.DockGroups.Add(Config.Items, group, new Core.Config.DockItem { Kind = "arquivo", Path = exe, Name = _entries[from].Name });
+            Changed();
+        }
+    }
+
     private Search.SearchWindow? _search;
 
     /// <summary>Abre (ou fecha, se já aberta) a pesquisa do Aurora logo acima do painel do dock.</summary>

@@ -134,11 +134,66 @@ public sealed class DockConfig
 
 public sealed class DockItem
 {
-    /// <summary>"arquivo" (exe/lnk/qualquer arquivo), "pasta", "app" (UWP via AppUserModelID) ou "separador".</summary>
+    /// <summary>"arquivo" (exe/lnk/qualquer arquivo), "pasta", "app" (UWP via AppUserModelID), "separador" ou "grupo".</summary>
     public string Kind { get; set; } = "arquivo";
     public string Path { get; set; } = "";
     public string? Arguments { get; set; }
     public string? Name { get; set; }
+    /// <summary>Atalhos dentro de um grupo (só para Kind = "grupo"; grupos não se aninham).</summary>
+    public List<DockItem>? Items { get; set; }
+
+    [JsonIgnore]
+    public bool IsGroup => Kind == "grupo";
+}
+
+/// <summary>Operações dos grupos de atalhos do dock (puras, sobre a lista de itens fixados).</summary>
+public static class DockGroups
+{
+    /// <summary>Cria um grupo vazio (ou com <paramref name="first"/>, tirado do dock) na posição dele.</summary>
+    public static DockItem Create(List<DockItem> items, string name, DockItem? first = null)
+    {
+        var group = new DockItem { Kind = "grupo", Name = name, Items = [] };
+        int at = first is null ? items.Count : Math.Max(0, items.IndexOf(first));
+        if (first is not null)
+        {
+            items.Remove(first);
+            group.Items.Add(first);
+        }
+        items.Insert(Math.Min(at, items.Count), group);
+        return group;
+    }
+
+    /// <summary>Adiciona ao grupo (tirando do dock se estiver lá). Separadores e grupos não entram.</summary>
+    public static bool Add(List<DockItem> items, DockItem group, DockItem item)
+    {
+        if (!group.IsGroup || item.IsGroup || item.Kind == "separador" || ReferenceEquals(group, item)) return false;
+        group.Items ??= [];
+        if (group.Items.Any(i => SameTarget(i, item))) { items.Remove(item); return false; } // já está
+        items.Remove(item);
+        group.Items.Add(item);
+        return true;
+    }
+
+    /// <summary>Tira do grupo; com <paramref name="toDock"/>, o atalho volta ao dock logo depois do grupo.</summary>
+    public static void Remove(List<DockItem> items, DockItem group, DockItem item, bool toDock)
+    {
+        if (group.Items?.Remove(item) != true) return;
+        if (toDock) items.Insert(Math.Min(items.IndexOf(group) + 1, items.Count), item);
+    }
+
+    /// <summary>Desfaz o grupo: os atalhos voltam ao dock no lugar dele.</summary>
+    public static void Ungroup(List<DockItem> items, DockItem group)
+    {
+        int at = items.IndexOf(group);
+        if (at < 0) return;
+        items.RemoveAt(at);
+        items.InsertRange(at, group.Items ?? []);
+    }
+
+    public static IEnumerable<DockItem> Groups(IEnumerable<DockItem> items) => items.Where(i => i.IsGroup);
+
+    private static bool SameTarget(DockItem a, DockItem b) =>
+        a.Kind == b.Kind && string.Equals(a.Path, b.Path, StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class PerformanceConfig

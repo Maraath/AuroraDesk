@@ -68,6 +68,10 @@ O app tem uma instância só. Uma segunda execução abre as configurações da 
   - O clique direito abre o menu do widget: camada, opacidade, escala, travar, clique através, editar skin, abrir pasta, recarregar e fechar.
   - Camadas: "na área de trabalho" (logo acima do papel de parede, abaixo das janelas), "normal" ou "sempre no topo".
 - **Dock**:
+  - **Grupos de atalhos**: clique direito no dock → "Criar grupo de atalhos", ou num atalho → "Mover para o grupo".
+    - No dock, o grupo mostra as miniaturas dos 4 primeiros atalhos. Clicar abre um painel com todos eles, acima do dock.
+    - Arraste arquivos ou atalhos para cima do grupo (ou para dentro do painel) para adicionar. No painel, clique no título para renomear e use o clique direito num atalho para tirá-lo ou devolvê-lo ao dock.
+    - "Desagrupar" devolve todos os atalhos ao dock.
   - Clique abre o app ou traz a janela à frente. Clicar no app ativo minimiza; com várias janelas, alterna entre elas. O clique do meio abre uma nova janela.
   - Arraste arquivos, atalhos e pastas para fixar. Arraste um item para reordenar ou para fora do dock para desafixar.
   - O clique direito mostra janelas, fechar, fixar/desafixar, abrir local do arquivo e as opções do dock.

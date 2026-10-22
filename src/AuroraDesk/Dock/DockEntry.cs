@@ -18,6 +18,9 @@ internal sealed class DockEntry
     public string? Glyph { get; init; }
     /// <summary>Botão de pesquisa do Windows (Win+S): fixo no início, não é um item fixado.</summary>
     public bool IsSearch { get; init; }
+    /// <summary>Miniaturas dos primeiros atalhos de um grupo (null = sem ícone).</summary>
+    public IReadOnlyList<BitmapSource?>? GroupIcons { get; set; }
+    public bool IsGroup => Pinned?.IsGroup == true;
     public List<WindowRecord> Windows { get; } = [];
     public bool IsRunning => Windows.Count > 0;
     public bool IsActive { get; set; }
