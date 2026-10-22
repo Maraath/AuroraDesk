@@ -4,19 +4,28 @@ using Microsoft.Win32;
 
 namespace AuroraDesk.Infrastructure;
 
-/// <summary>Registro do usuário atual (HKCU). Nada aqui exige administrador.</summary>
+/// <summary>
+/// Registro do usuário atual (HKCU). Nada aqui exige administrador. Valores como texto
+/// codificado (<see cref="RegistryValueCodec"/>): texto, "dword:N" ou "binary:HEX".
+/// </summary>
 internal sealed class UserRegistry : IUserRegistry
 {
     public string? Get(string key, string name)
     {
         using var k = Registry.CurrentUser.OpenSubKey(key);
-        return k?.GetValue(name) as string;
+        object? value = k?.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+        return value is null ? null : RegistryValueCodec.Encode(value);
     }
 
     public void Set(string key, string name, string value)
     {
         using var k = Registry.CurrentUser.CreateSubKey(key);
-        k.SetValue(name, value, RegistryValueKind.String);
+        switch (RegistryValueCodec.Decode(value))
+        {
+            case uint u: k.SetValue(name, unchecked((int)u), RegistryValueKind.DWord); break;
+            case byte[] b: k.SetValue(name, b, RegistryValueKind.Binary); break;
+            default: k.SetValue(name, value, RegistryValueKind.String); break;
+        }
     }
 
     public void Delete(string key, string name)

@@ -27,6 +27,27 @@ public sealed class AppConfig
     public DockConfig Dock { get; set; } = new();
     public PerformanceConfig Performance { get; set; } = new();
     public WeatherConfig Weather { get; set; } = new();
+    public WindowsStyleConfig WindowsStyle { get; set; } = new();
+}
+
+/// <summary>
+/// "Windows com o tema do Aurora": cores oficiais de personalização e molduras das janelas.
+/// Tudo pelo lado de fora (registro do usuário e atributos do DWM), sem entrar em outros programas.
+/// </summary>
+public sealed class WindowsStyleConfig
+{
+    /// <summary>Liga a sincronização das cores do Windows com o tema.</summary>
+    public bool SyncColors { get; set; }
+    public bool DarkMode { get; set; } = true;
+    public bool Accent { get; set; } = true;
+    public bool AccentOnTitleBars { get; set; } = true;
+    /// <summary>Ao fechar o Aurora, devolver as cores originais do Windows.</summary>
+    public bool RestoreOnExit { get; set; } = true;
+
+    /// <summary>Pinta a barra de título/abas e a borda das janelas com as cores do tema.</summary>
+    public bool FrameColors { get; set; }
+    /// <summary>"todas" ou "explorer" (só o Explorador de Arquivos).</summary>
+    public string FrameScope { get; set; } = "todas";
 }
 
 public sealed class WidgetInstance

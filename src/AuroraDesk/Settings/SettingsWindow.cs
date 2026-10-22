@@ -361,6 +361,27 @@ internal sealed class SettingsWindow : Window
             Ui.Row("Tema no modo claro", Ui.Combo(names, Config.LightTheme, v => { Config.LightTheme = v; _host.Themes.Refresh(true); _host.SaveConfig(); })),
             Ui.Row("Usar a cor de destaque do Windows", Ui.Toggle(Config.FollowWindowsAccent, v => { Config.FollowWindowsAccent = v; _host.Themes.Refresh(true); _host.SaveConfig(); }))));
 
+        var ws = Config.WindowsStyle;
+        void Style(Action change) { change(); _host.SaveConfig(); _host.Styler.ApplyAll(); }
+        page.Children.Add(Ui.Section("Windows com o tema do Aurora"));
+        page.Children.Add(Ui.Card(
+            Ui.Note("Leva o tema para o resto do PC pelas opções oficiais de personalização do Windows. Os valores originais são guardados e voltam em \"Restaurar original\" (Geral)."),
+            Ui.Row("Sincronizar as cores do Windows com o tema", Ui.Toggle(ws.SyncColors, v => Style(() =>
+            {
+                ws.SyncColors = v;
+                if (!v) _host.Styler.RestoreColors();
+                _host.Themes.Refresh(true);
+            })), "Troca junto com o tema. Enquanto estiver ligado, \"seguir o Windows\" (acima) fica desativado, para um não brigar com o outro."),
+            Ui.Row("   Modo escuro ou claro conforme o tema", Ui.Toggle(ws.DarkMode, v => Style(() => ws.DarkMode = v))),
+            Ui.Row("   Cor de destaque do Windows = destaque do tema", Ui.Toggle(ws.Accent, v => Style(() => ws.Accent = v))),
+            Ui.Row("   Cor de destaque nas barras de título e bordas", Ui.Toggle(ws.AccentOnTitleBars, v => Style(() => ws.AccentOnTitleBars = v))),
+            Ui.Row("   Devolver as cores originais ao fechar o Aurora", Ui.Toggle(ws.RestoreOnExit, v => Style(() => ws.RestoreOnExit = v)),
+                "Desligado: o Windows continua com as cores do tema mesmo com o Aurora fechado.")));
+        page.Children.Add(Ui.Card(
+            Ui.Row("Barra de título, abas e borda das janelas nas cores do tema", Ui.Toggle(ws.FrameColors, v => Style(() => ws.FrameColors = v)),
+                "No Explorador de Arquivos, pinta a faixa das abas. Feito pelo gerenciador de janelas do Windows, sem entrar nos programas. Apps que desenham a própria barra mostram só a borda."),
+            Ui.Row("Aplicar em", Ui.Combo([("Todas as janelas", "todas"), ("Só no Explorador de Arquivos", "explorer")], ws.FrameScope, v => Style(() => ws.FrameScope = v)))));
+
         page.Children.Add(Ui.Section("Criar um tema"));
         page.Children.Add(Ui.Card(
             Ui.Note("Duplique o tema atual: um arquivo .json é criado em %APPDATA%\\AuroraDesk\\themes e aberto no editor. Ao salvar, o tema é recarregado."),

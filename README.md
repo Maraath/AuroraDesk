@@ -226,6 +226,24 @@ Com a opção **"Ocultar a barra de tarefas do Windows enquanto o Aurora Desk es
   - A reserva é devolvida ao fechar e refeita se o Explorer reiniciar.
 - Caso extremo: se o app e o vigia forem encerrados juntos ("Finalizar árvore de processos"), a barra fica oculta até você abrir o Aurora Desk de novo (que a gerencia) ou usar **Restaurar original**.
 
+## Windows com o tema do Aurora
+
+Fica em Configurações → Temas. Leva o tema para o resto do PC **sem entrar em outros programas**, só pelas opções oficiais do Windows:
+
+- **Sincronizar as cores do Windows com o tema.** O app grava no registro do usuário:
+  - modo escuro ou claro conforme o tema;
+  - cor de destaque do Windows igual ao destaque do tema, com a paleta de 8 tons;
+  - "mostrar a cor de destaque nas barras de título e bordas".
+
+  Ao trocar o tema no Aurora, o Windows acompanha. Os valores originais são guardados e voltam ao fechar o app (padrão; dá para desligar e manter as cores) ou com Restaurar original. Enquanto essa opção estiver ligada, "seguir o Windows" fica desativado, para os dois não se realimentarem.
+- **Barra de título, abas e borda das janelas nas cores do tema.** O app pede ao gerenciador de janelas do Windows (DWM, `DwmSetWindowAttribute` de fora, como faz o Mica For Everyone) para pintar a barra, o texto e a borda de cada janela, em todas as janelas ou só no Explorador de Arquivos.
+  - No Explorer, isso colore a faixa das abas.
+  - Apps que desenham a própria barra mostram só a borda.
+  - Como alguns apps, entre eles o Explorer, redefinem a cor logo depois de abrir, o app reaplica a cor alguns instantes depois e sempre que a janela ganha o foco.
+  - Ao desligar ou fechar o app, as janelas voltam às cores padrão.
+
+O limite: o fundo, o painel lateral e o conteúdo do Explorer seguem o modo escuro ou claro do Windows. Pintar o Explorer por dentro exigiria injetar código no `explorer.exe`, como fazem o Windhawk e o ExplorerBlurMica. O Aurora não faz isso: é a mesma técnica usada por malware, aciona antivírus, pode derrubar a área de trabalho e quebra com atualizações. Essas ferramentas podem ser usadas à parte, por sua conta, junto com o Aurora.
+
 ## Perfis e Rainmeter
 
 - **Exportar/Importar perfil** (Configurações → Geral): um `.zip` com tema, widgets, fontes e configuração do dock. A importação:
@@ -255,7 +273,7 @@ O script mostra Private Bytes, Working Set (total, pico e privado), CPU média o
 - Nada exige administrador. O app só mexe no usuário atual: a chave `HKCU\...\Run` (se você ligar "Iniciar com o Windows") e a reserva de espaço do dock (AppBar, devolvida ao sair).
 - **Restaurar original** devolve os valores do registro guardados em `backup\windows-original.json`, libera o espaço do dock e mostra a barra de tarefas de novo (desligando a opção de ocultá-la).
 - **Barra de tarefas do Windows**: por padrão, fica **oculta enquanto o Aurora Desk estiver aberto** e volta sozinha quando ele fecha. Veja "Barra de tarefas do Windows" abaixo.
-- O papel de parede e as cores do Windows **não são alterados**; o modo claro/escuro e a cor de destaque são só lidos.
+- **Cores do Windows**: só mudam se você ligar "Windows com o tema do Aurora" (Temas). Os valores originais vão para `backup\windows-original.json` e voltam ao fechar o app (opção) ou com Restaurar original. O papel de parede não é alterado.
 - Rede: só o clima, se você ligar, usa a internet.
   - O tempo é consultado em `api.open-meteo.com` a cada 30 min, enviando só latitude e longitude.
   - Ao digitar a cidade em Configurações → Geral, o app busca o nome em `geocoding-api.open-meteo.com` (só o texto digitado), preenche a latitude e a longitude da cidade mais provável e mostra as outras com o mesmo nome para escolher.

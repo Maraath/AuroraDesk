@@ -69,7 +69,15 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
   - Investigação antes de escolher esse caminho: `ITrayNotify` (CLSID 25DEAD04…) registra o callback sem erro, mas não entrega nenhum item no Windows 11 26200.
   - A árvore de UI Automation da `Shell_TrayWnd` oculta tem 0 elementos.
 
+- **Windows com o tema do Aurora**:
+  - Com o Mocha, o registro do usuário ficou assim: modo escuro (`AppsUseLightTheme` e `SystemUsesLightTheme` = 0), `ColorPrevalence` = 1 e o destaque `#CBA6F7`.
+  - Ao fechar o app, os valores voltaram exatamente aos originais: modo claro, `ColorPrevalence` 0, destaque azul do Windows e `AutoColorization` removido de novo.
+  - Faixa das abas do Explorer (captura com `PrintWindow`): no tom do Mocha `#313244` com o Aurora aberto, e no padrão sem ele. A cor continua lá depois de 6 s.
+  - O teste encontrou um defeito: o Explorer redefine a cor da barra logo depois de abrir. Corrigido: a cor é reaplicada após 0,4 s e 1,5 s e sempre que a janela ganha o foco.
+
 Não verificado (ou verificado só parcialmente):
+
+- Molduras em janelas novas do Explorer: o Windows deste PC abre pastas como abas da janela existente, então o caminho "janela nova" foi coberto pela reaplicação ao iniciar e ao ganhar o foco, não por uma janela nova de fato.
 
 - Clique real com o mouse nos itens das ilhas, como abrir o Gerenciador de Tarefas e rolar o volume. Os atalhos Win+A e Win+N foram testados enviando as teclas.
 

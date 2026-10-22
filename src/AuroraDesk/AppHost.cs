@@ -56,7 +56,11 @@ internal sealed class AppHost : IDisposable
         Startup = new StartupRegistration(Backup, registry);
         Trimmer = new MemoryTrimmer(Config.Performance, Dispatcher);
         Taskbar = new TaskbarHider(new TaskbarBackup(Program.BackupFile()), Control, Dispatcher);
+        Styler = new WindowsStyler(Config, Themes, Backup, Dispatcher);
     }
+
+    /// <summary>Cores do Windows e molduras das janelas com o tema do Aurora.</summary>
+    public WindowsStyler Styler { get; }
 
     public TaskbarHider Taskbar { get; }
 
@@ -110,6 +114,7 @@ internal sealed class AppHost : IDisposable
         else Taskbar.Restore();
         Widgets.Start();
         Dock.Start();
+        if (Config.WindowsStyle.SyncColors || Config.WindowsStyle.FrameColors) Styler.Schedule();
 
         var startedAt = Process.GetCurrentProcess().StartTime;
         // Medido quando a fila de interface esvazia, isto é, com tudo já visível.
@@ -233,7 +238,12 @@ internal sealed class AppHost : IDisposable
     public int RestoreOriginal()
     {
         int count = 0;
-        try { count = Backup.RestoreAll(); }
+        // Cores e molduras primeiro: elas avisam o Windows para redesenhar.
+        Config.WindowsStyle.SyncColors = false;
+        Config.WindowsStyle.FrameColors = false;
+        count += Styler.RestoreColors();
+        Styler.ApplyAll();
+        try { count += Backup.RestoreAll(); }
         catch (Exception ex) { Log.Error("Falha ao restaurar valores originais", ex); }
         if (Config.HideTaskbar || Taskbar.IsActive)
         {
@@ -309,6 +319,7 @@ internal sealed class AppHost : IDisposable
         _settings?.Close();
         if (!_skipSaveOnExit) SaveConfig();
         Taskbar.Restore(); // primeiro: a barra volta mesmo se algo abaixo falhar
+        Styler.Dispose();  // molduras ao padrão e, se configurado, as cores originais do Windows
         Dock.Dispose();
         Widgets.Dispose();
         _themeWatcher?.Dispose();

@@ -97,11 +97,15 @@ internal sealed class ThemeService
 
     private Theme Compute() => Store.Resolve(
         _config.Theme,
-        _config.FollowWindowsTheme,
-        _config.FollowWindowsTheme && WindowsTheme.AppsUseDarkMode(),
+        // Com "Windows com o tema do Aurora" ligado, quem manda é o Aurora: seguir o Windows aqui
+        // faria as duas coisas se realimentarem.
+        FollowWindows,
+        FollowWindows && WindowsTheme.AppsUseDarkMode(),
         _config.DarkTheme,
         _config.LightTheme,
-        _config.FollowWindowsAccent ? WindowsTheme.Accent() : null);
+        _config.FollowWindowsAccent && !_config.WindowsStyle.SyncColors ? WindowsTheme.Accent() : null);
+
+    private bool FollowWindows => _config.FollowWindowsTheme && !_config.WindowsStyle.SyncColors;
 
     private static bool SameTheme(Theme a, Theme b) =>
         a.Name == b.Name && a.Accent == b.Accent && ReferenceEquals(a.SourcePath, b.SourcePath) && a.Colors.Count == b.Colors.Count;
