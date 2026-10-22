@@ -75,6 +75,8 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
   - Faixa das abas do Explorer (captura com `PrintWindow`): no tom do Mocha `#313244` com o Aurora aberto, e no padrão sem ele. A cor continua lá depois de 6 s.
   - O teste encontrou um defeito: o Explorer redefine a cor da barra logo depois de abrir. Corrigido: a cor é reaplicada após 0,4 s e 1,5 s e sempre que a janela ganha o foco.
 
+- **Grupos de atalhos**: o ícone com 4 miniaturas foi conferido em captura. O painel do grupo foi testado pelo usuário com o mouse real e aprovado.
+
 Não verificado (ou verificado só parcialmente):
 
 - Molduras em janelas novas do Explorer: o Windows deste PC abre pastas como abas da janela existente, então o caminho "janela nova" foi coberto pela reaplicação ao iniciar e ao ganhar o foco, não por uma janela nova de fato.
