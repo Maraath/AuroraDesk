@@ -54,6 +54,12 @@ public sealed class WindowsStyleConfig
     public bool FrameColors { get; set; }
     /// <summary>"todas" ou "explorer" (só o Explorador de Arquivos).</summary>
     public string FrameScope { get; set; } = "todas";
+
+    /// <summary>
+    /// No Explorador de Arquivos moderno (abas), deixa a faixa de cima com o efeito do próprio
+    /// Windows (Mica, tingido pelo papel de parede) em vez da cor do tema. Padrão: sim.
+    /// </summary>
+    public bool ExplorerMica { get; set; } = true;
     /// <summary>Campos que esta versão não conhece (de uma versão mais nova): lidos e gravados de volta sem perda.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }

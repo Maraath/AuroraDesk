@@ -167,25 +167,37 @@ internal sealed unsafe class WindowsStyler : IDisposable
     private void StyleWindow(nint hwnd)
     {
         if (!Eligible(hwnd)) return;
+        if (Options.ExplorerMica && IsModernExplorer(hwnd))
+        {
+            // Volta ao padrão (desfaz uma pintura anterior): o Explorer desenha a faixa com o Mica.
+            SetFrame(hwnd, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_DEFAULT);
+            _styled.Remove(hwnd);
+            return;
+        }
         var t = _themes.Current;
-        uint caption = ColorRef(t.Surface), text = ColorRef(t.Text), border = ColorRef(t.Accent);
+        SetFrame(hwnd, ColorRef(t.Surface), ColorRef(t.Text), ColorRef(t.Accent));
+        _styled.Add(hwnd);
+    }
+
+    private static void SetFrame(nint hwnd, uint caption, uint text, uint border)
+    {
         Win32.DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &caption, sizeof(uint));
         Win32.DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &text, sizeof(uint));
         Win32.DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &border, sizeof(uint));
-        _styled.Add(hwnd);
     }
+
+    /// <summary>
+    /// Explorador de Arquivos com abas (barra de título em XAML, com Mica). O Painel de Controle
+    /// usa a mesma classe de janela, mas com a barra clássica, e continua sendo pintado.
+    /// </summary>
+    private static bool IsModernExplorer(nint hwnd) =>
+        Win32.ClassName(hwnd) == "CabinetWClass" && Win32.FindWindowEx(hwnd, 0, "TITLE_BAR_SCAFFOLDING_WINDOW_CLASS", null) != 0;
 
     /// <summary>Volta todas as janelas que pintamos para as cores padrão do Windows.</summary>
     private void ClearFrames()
     {
-        uint def = DWMWA_COLOR_DEFAULT;
         foreach (var hwnd in _styled)
-        {
-            if (!Win32.IsWindow(hwnd)) continue;
-            Win32.DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &def, sizeof(uint));
-            Win32.DwmSetWindowAttribute(hwnd, DWMWA_TEXT_COLOR, &def, sizeof(uint));
-            Win32.DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &def, sizeof(uint));
-        }
+            if (Win32.IsWindow(hwnd)) SetFrame(hwnd, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_DEFAULT, DWMWA_COLOR_DEFAULT);
         _styled.Clear();
     }
 

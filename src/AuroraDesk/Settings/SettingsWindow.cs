@@ -386,7 +386,9 @@ internal sealed class SettingsWindow : Window
         page.Children.Add(Ui.Card(
             Ui.Row("Barra de título, abas e borda das janelas nas cores do tema", Ui.Toggle(ws.FrameColors, v => Style(() => ws.FrameColors = v)),
                 "No Explorador de Arquivos, pinta a faixa das abas. Feito pelo gerenciador de janelas do Windows, sem entrar nos programas. Apps que desenham a própria barra mostram só a borda."),
-            Ui.Row("Aplicar em", Ui.Combo([("Todas as janelas", "todas"), ("Só no Explorador de Arquivos", "explorer")], ws.FrameScope, v => Style(() => ws.FrameScope = v)))));
+            Ui.Row("Aplicar em", Ui.Combo([("Todas as janelas", "todas"), ("Só no Explorador de Arquivos", "explorer")], ws.FrameScope, v => Style(() => ws.FrameScope = v))),
+            Ui.Row("   Explorador de Arquivos com o efeito do Windows", Ui.Toggle(ws.ExplorerMica, v => Style(() => ws.ExplorerMica = v)),
+                "Padrão: ligado. A faixa das abas fica translúcida, tingida pelo papel de parede, em vez da cor do tema. O Painel de Controle e as outras janelas continuam com a cor do tema.")));
 
         page.Children.Add(Ui.Section("Criar um tema"));
         page.Children.Add(Ui.Card(
