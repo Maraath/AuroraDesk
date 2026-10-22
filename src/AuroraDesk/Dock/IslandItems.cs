@@ -154,6 +154,27 @@ internal sealed class IconButtonItem(string key, string glyph, string tooltip, A
     public override void Click() => click();
 }
 
+/// <summary>
+/// "Mostrar área de trabalho", como o canto da barra do Windows: só um traço vertical fino no
+/// fim da ilha direita. Minimiza tudo; outro clique devolve as janelas.
+/// </summary>
+internal sealed class ShowDesktopItem(Action click) : IslandItem("area-de-trabalho")
+{
+    public override bool Clickable => true;
+    public override string? Tooltip => "Mostrar a área de trabalho";
+
+    public override double Width(IslandContext ctx) => 4;
+
+    public override void Draw(DrawingContext dc, IslandContext ctx, Rect area)
+    {
+        double h = Math.Min(18, area.Height - 8);
+        var line = new Rect(area.X + 1.5, area.Y + (area.Height - h) / 2, 1, h);
+        dc.DrawRectangle(ctx.Themes.Brush(ctx.Theme.TextSecondary.WithOpacity(0.45)), null, line);
+    }
+
+    public override void Click() => click();
+}
+
 /// <summary>Relógio de duas linhas: hora e data curta ("qua, 21 out").</summary>
 internal sealed class ClockItem(Action click) : IslandItem("relogio")
 {

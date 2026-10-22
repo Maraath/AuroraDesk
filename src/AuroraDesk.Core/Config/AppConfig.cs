@@ -146,6 +146,9 @@ public sealed class DockConfig
     /// </summary>
     public bool TrayOverflow { get; set; } = true;
 
+    /// <summary>Traço discreto no fim da ilha direita que mostra a área de trabalho (Win+D).</summary>
+    public bool ShowDesktopButton { get; set; } = true;
+
     public static readonly string[] AllLeftItems = ["cpu", "ram", "disco", "rede", "clima", "bateria"];
     public static readonly string[] AllRightItems = ["aurora", "conexao", "volume", "bateria", "relogio"];
     /// <summary>Campos que esta versão não conhece (de uma versão mais nova): lidos e gravados de volta sem perda.</summary>

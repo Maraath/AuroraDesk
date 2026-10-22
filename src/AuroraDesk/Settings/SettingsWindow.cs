@@ -244,6 +244,8 @@ internal sealed class SettingsWindow : Window
             Ui.Row("Seta ^ com os ícones dos outros apps", Ui.Toggle(d.TrayOverflow, v => Apply(() => d.TrayOverflow = v)),
                 "Abre o painel de ícones da bandeja do próprio Windows (Discord, Steam...), com clique direito e menus normais."),
             Checks(DockConfig.AllRightItems, d.RightItems, [("aurora", "Aurora Desk"), ("conexao", "Wi-Fi/rede"), ("volume", "Volume"), ("bateria", "Bateria"), ("relogio", "Relógio")]),
+            Ui.Row("Botão \"mostrar a área de trabalho\"", Ui.Toggle(d.ShowDesktopButton, v => Apply(() => d.ShowDesktopButton = v)),
+                "Traço fino no fim da ilha direita, como no canto da barra do Windows: minimiza tudo e, no clique seguinte, devolve as janelas."),
             Ui.Note("Clique na CPU ou na RAM para abrir o Gerenciador de Tarefas, nos ícones do sistema para abrir as configurações rápidas do Windows e no relógio para ver as notificações e o calendário. Role o mouse sobre o volume para ajustá-lo. O clima só aparece com o clima ligado (Geral).")));
 
         page.Children.Add(Ui.Section("Aparência"));

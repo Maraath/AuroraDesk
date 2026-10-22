@@ -177,6 +177,8 @@ internal sealed partial class DockManager
             };
             if (item is not null) _rightItems.Add(item);
         }
+        // Win+D: o próprio Windows minimiza tudo e, no clique seguinte, devolve as janelas.
+        if (Config.ShowDesktopButton) _rightItems.Add(new ShowDesktopItem(() => Win32.SendWinShortcut('D')));
     }
 
     private static void QuickSettings() => Win32.SendWinShortcut('A');
