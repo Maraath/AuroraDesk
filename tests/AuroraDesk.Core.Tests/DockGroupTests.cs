@@ -58,6 +58,20 @@ public class DockGroupTests
     }
 
     [Fact]
+    public void GruposNoFimFormamUmBlocoFixoNaDireita()
+    {
+        DockItem Sep() => new() { Kind = "separador" };
+        DockItem G() => new() { Kind = "grupo", Items = [] };
+        var a = F("a.exe"); var b = F("b.exe");
+
+        Assert.Equal(2, DockGroups.TrailingGroupsStart([a, b, Sep(), Sep(), G(), G(), G()])); // seps entram no bloco
+        Assert.Equal(2, DockGroups.TrailingGroupsStart([a, b, G()]));
+        Assert.Equal(3, DockGroups.TrailingGroupsStart([a, b, Sep()])); // sem grupo: tudo no fim
+        Assert.Equal(4, DockGroups.TrailingGroupsStart([a, G(), b, F("c.exe")])); // grupo no meio não prende nada
+        Assert.Equal(0, DockGroups.TrailingGroupsStart([]));
+    }
+
+    [Fact]
     public void GrupoSobreviveAoConfigJson()
     {
         var config = new AppConfig();

@@ -219,6 +219,21 @@ public static class DockGroups
 
     public static IEnumerable<DockItem> Groups(IEnumerable<DockItem> items) => items.Where(i => i.IsGroup);
 
+    /// <summary>
+    /// Início do bloco de grupos no fim do dock (com os separadores logo antes dele), que fica
+    /// sempre na ponta direita: apps abertos e atalhos recém-fixados entram antes deste índice.
+    /// Sem grupos no fim, devolve <c>items.Count</c> (tudo entra no fim, como antes).
+    /// </summary>
+    public static int TrailingGroupsStart(IReadOnlyList<DockItem> items)
+    {
+        int start = items.Count;
+        while (start > 0 && (items[start - 1].IsGroup || items[start - 1].Kind == "separador")) start--;
+        // Só separadores no fim (sem grupo) não formam bloco.
+        for (int i = start; i < items.Count; i++)
+            if (items[i].IsGroup) return start;
+        return items.Count;
+    }
+
     private static bool SameTarget(DockItem a, DockItem b) =>
         a.Kind == b.Kind && string.Equals(a.Path, b.Path, StringComparison.OrdinalIgnoreCase);
 }

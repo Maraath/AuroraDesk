@@ -166,8 +166,14 @@ internal sealed partial class DockManager : IDisposable
         }
         if (extras.Count > 0)
         {
-            if (entries.Count > 0) entries.Add(new DockEntry { Pinned = new DockItem { Kind = "separador" }, Name = "" });
-            entries.AddRange(extras);
+            // Apps abertos entram antes do bloco de grupos do fim, que fica sempre na ponta direita.
+            int blockStart = DockGroups.TrailingGroupsStart(Config.Items);
+            int at = (Config.SearchButton ? 1 : 0) + blockStart;
+            var insert = new List<DockEntry>();
+            if (at > 0) insert.Add(Separator());
+            insert.AddRange(extras);
+            if (blockStart < Config.Items.Count && Config.Items[blockStart].Kind != "separador") insert.Add(Separator());
+            entries.InsertRange(at, insert);
         }
 
         int iconPixels = IconPixels();
@@ -187,6 +193,9 @@ internal sealed partial class DockManager : IDisposable
         string key = $"{entries.Count}|{entries.Count(e => e.IsSeparator)}|{Config.Edge}|{Config.IconSize}|{Config.Monitor}|{Reserve}";
         if (key != _layoutKey) { _layoutKey = key; Place(); }
     }
+
+    /// <summary>Separador automático (não fica na configuração).</summary>
+    private static DockEntry Separator() => new() { Pinned = new DockItem { Kind = "separador" }, Name = "" };
 
     private int IconPixels()
     {
@@ -458,7 +467,7 @@ internal sealed partial class DockManager : IDisposable
             ? new DockItem { Kind = "app", Path = id.AppId!, Name = e.Name }
             : new DockItem { Kind = "arquivo", Path = id.ExePath ?? "", Name = e.Name };
         if (item.Path.Length == 0) return;
-        Config.Items.Add(item);
+        Config.Items.Insert(DockGroups.TrailingGroupsStart(Config.Items), item); // antes dos grupos do fim
         Changed(); // app da Store fixado pelo exe (ex.: Claude) vira AppUserModelID ao gravar
     }
 
