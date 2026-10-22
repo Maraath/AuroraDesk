@@ -65,6 +65,20 @@ public sealed class ConfigStoreRobustezTests : IDisposable
     }
 
     [Fact]
+    public void AchaCopiaDosDadosRedirecionadaParaUmPacote()
+    {
+        string packages = Path.Combine(_dir, "Packages");
+        string copia = Directory.CreateDirectory(Path.Combine(packages, "Claude_abc", "LocalCache", "Roaming", "AuroraDesk")).FullName;
+        Directory.CreateDirectory(Path.Combine(packages, "Outro_xyz", "LocalCache", "Roaming"));
+        var paths = new AppPaths(Path.Combine(_dir, "Roaming", "AuroraDesk"), Path.Combine(_dir, "Local", "AuroraDesk"));
+
+        Assert.Empty(paths.FindPackageCopies(packages)); // pasta sem config.json não conta
+        File.WriteAllText(Path.Combine(copia, "config.json"), "{}");
+        Assert.Equal(copia, Assert.Single(paths.FindPackageCopies(packages)));
+        Assert.Empty(paths.FindPackageCopies(Path.Combine(_dir, "nao-existe")));
+    }
+
+    [Fact]
     public void FalhaPassageiraEhVencidaComNovasTentativas()
     {
         new ConfigStore(ConfigPath).Save(ComGrupo());

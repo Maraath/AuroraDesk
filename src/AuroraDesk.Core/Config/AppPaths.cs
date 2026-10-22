@@ -22,6 +22,24 @@ public sealed class AppPaths
     public string Logs => Path.Combine(Local, "logs");
     public string IconCache => Path.Combine(Local, "cache", "icons");
 
+    /// <summary>
+    /// Cópias da pasta de dados criadas pelo Windows para apps empacotados (MSIX). Um processo
+    /// aberto por um desses apps (ex.: o Claude desktop) tem o AppData redirecionado para
+    /// Packages\&lt;pacote&gt;\LocalCache: a configuração gravada lá não é a do usuário.
+    /// </summary>
+    public IEnumerable<string> FindPackageCopies(string? packagesRoot = null)
+    {
+        packagesRoot ??= Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Packages");
+        string[] packages;
+        try { packages = Directory.GetDirectories(packagesRoot); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { yield break; }
+        foreach (var package in packages)
+        {
+            string copy = Path.Combine(package, "LocalCache", "Roaming", Path.GetFileName(Roaming));
+            if (File.Exists(Path.Combine(copy, "config.json"))) yield return copy;
+        }
+    }
+
     public void EnsureCreated()
     {
         foreach (var dir in new[] { Roaming, Widgets, Themes, Fonts, Backup, Shortcuts, Logs, IconCache })

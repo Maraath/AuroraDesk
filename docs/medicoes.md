@@ -89,6 +89,12 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
     - Correção: antes de simular teclas, se a janela da frente for elevada, o Aurora põe a própria janela na frente.
     - Não verificado com clique real.
 
+- **Configuração que "não salvava" (causa real):** o Claude desktop é um app empacotado (MSIX). Todo processo aberto a partir dele, incluindo os terminais do Claude Code e as instâncias do Aurora abertas por eles, tem as gravações em `AppData` redirecionadas para `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\AuroraDesk`.
+  - A configuração ajustada nessas instâncias (grupos, ilhas, atalhos) ia para a cópia do pacote. O Aurora aberto pelo logon lia o `AppData` real e voltava ao padrão.
+  - O redirecionamento não é detectável pela identidade do pacote (`GetCurrentPackageFullName` responde "sem pacote" nos filhos), então o app agora procura cópias da própria pasta em `Packages\*\LocalCache` ao abrir e avisa no log.
+  - Correção: a configuração foi levada da cópia para o `AppData` real, a cópia foi removida e o app passou a ser aberto com `tools\abrir.ps1` (via WMI, fora do pacote).
+  - Consequência para medições anteriores: testes de configuração feitos com o app aberto a partir do Claude desktop valeram para a cópia do pacote. O estado da barra do Windows (`ABM_SETSTATE`) e o registro não são redirecionados.
+
 Não verificado (ou verificado só parcialmente):
 
 - Molduras em janelas novas do Explorer: o Windows deste PC abre pastas como abas da janela existente, então o caminho "janela nova" foi coberto pela reaplicação ao iniciar e ao ganhar o foco, não por uma janela nova de fato.

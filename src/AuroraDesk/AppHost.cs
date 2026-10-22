@@ -34,6 +34,9 @@ internal sealed class AppHost : IDisposable
         Paths = new AppPaths();
         Paths.EnsureCreated();
         Log.Initialize(Paths.Logs);
+        foreach (var copy in Paths.FindPackageCopies())
+            Log.Warn($"Há uma cópia dos dados do Aurora redirecionada para um app empacotado: {copy}. " +
+                "Abrir o Aurora por esse app faz as mudanças irem para lá, e não valem ao abrir pelo logon.");
         ConfigStore = new ConfigStore(Paths.ConfigFile);
         Config = ConfigStore.Load();
         Strings.Language = Strings.Parse(Config.Language);
