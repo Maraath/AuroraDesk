@@ -14,7 +14,9 @@ namespace AuroraDesk.Dock;
 internal sealed partial class DockManager
 {
     private IslandWindow? _leftIsland, _rightIsland;
-    private readonly List<IslandItem> _leftItems = [], _rightItems = [];
+    /// <summary>Quadro do jogador da skin, solto ao lado da ilha esquerda.</summary>
+    private IslandWindow? _frameIsland;
+    private readonly List<IslandItem> _leftItems = [], _rightItems = [], _frameItems = [];
     private readonly List<MeasureSpec> _islandSpecs = [];
     private readonly HashSet<Measure> _islandMeasures = [];
     private (Win32.RECT Area, double Scale) _lastPlacement;
@@ -23,7 +25,7 @@ internal sealed partial class DockManager
     private bool IslandsActive => Config.Islands && _window is not null && Config.Edge is "inferior" or "superior";
 
     /// <summary>As ilhas precisam de medidas (para o agendador não pausar).</summary>
-    public bool NeedsMeasures => IslandsActive && (_leftItems.Count > 0 || _rightItems.Count > 0);
+    public bool NeedsMeasures => IslandsActive && (_leftItems.Count > 0 || _rightItems.Count > 0 || _frameItems.Count > 0);
 
     private void ShowIslands()
     {
@@ -31,7 +33,7 @@ internal sealed partial class DockManager
         if (!IslandsActive) { _host.UpdateMeasureDemand(); return; }
 
         BuildItems();
-        foreach (var item in _leftItems.Concat(_rightItems))
+        foreach (var item in _leftItems.Concat(_rightItems).Concat(_frameItems))
         {
             item.Measures.Clear();
             foreach (var spec in item.Specs)
@@ -46,15 +48,17 @@ internal sealed partial class DockManager
 
         _leftIsland = CreateIsland(alignRight: false, _leftItems);
         _rightIsland = CreateIsland(alignRight: true, _rightItems);
+        _frameIsland = CreateIsland(alignRight: false, _frameItems, bare: true);
         _host.UpdateMeasureDemand();
         PlaceIslands();
     }
 
-    private IslandWindow? CreateIsland(bool alignRight, List<IslandItem> items)
+    private IslandWindow? CreateIsland(bool alignRight, List<IslandItem> items, bool bare = false)
     {
         if (items.Count == 0) return null;
         var w = new IslandWindow(_host.Themes, alignRight);
         w.Surface.Skin = _window!.UsesBackdrop ? null : _skin;
+        w.Surface.Bare = bare;
         w.Surface.SetItems(items);
         w.Surface.RightClicked += () => OnContextRequested(-1);
         w.Surface.MouseEnter += (_, _) => _hideTimer.Stop();
@@ -75,14 +79,16 @@ internal sealed partial class DockManager
         }
         _leftIsland?.Close();
         _rightIsland?.Close();
-        _leftIsland = _rightIsland = null;
+        _frameIsland?.Close();
+        _leftIsland = _rightIsland = _frameIsland = null;
         _leftItems.Clear();
         _rightItems.Clear();
+        _frameItems.Clear();
     }
 
     private void SetIslandsVisible(bool visible)
     {
-        foreach (var w in new[] { _leftIsland, _rightIsland })
+        foreach (var w in new[] { _leftIsland, _rightIsland, _frameIsland })
         {
             if (w is null) continue;
             if (visible && !w.IsVisible) { w.Show(); PlaceIslands(); }
@@ -96,6 +102,7 @@ internal sealed partial class DockManager
         double left = _leftIsland?.Surface.RequiredWidth() ?? 0, right = _rightIsland?.Surface.RequiredWidth() ?? 0;
         _leftIsland?.Surface.InvalidateVisual();
         _rightIsland?.Surface.InvalidateVisual();
+        _frameIsland?.Surface.InvalidateVisual();
         // Um item pode aparecer/sumir ou crescer (ex.: texto do clima): só então a janela muda.
         if (Math.Abs(left - _leftIsland?.ActualWidth ?? 0) > 0.5 || Math.Abs(right - _rightIsland?.ActualWidth ?? 0) > 0.5) PlaceIslands();
     }
@@ -110,7 +117,8 @@ internal sealed partial class DockManager
         bool backdrop = _window.UsesBackdrop;
         int margin = (int)Math.Round(8 * scale);
 
-        foreach (var (w, right) in new[] { (_leftIsland, false), (_rightIsland, true) })
+        int leftEnd = area.Left;
+        foreach (var (w, right) in new[] { (_leftIsland, false), (_rightIsland, true), (_frameIsland, false) })
         {
             if (w is null) continue;
             var s = w.Surface;
@@ -120,9 +128,11 @@ internal sealed partial class DockManager
             int width = (int)Math.Ceiling(s.RequiredWidth() * scale);
             int height = (int)Math.Ceiling((backdrop ? center.PanelThickness : s.RequiredHeight) * scale);
             if (width <= 0) { w.Hide(); continue; }
-            int x = right ? area.Right - margin - width : area.Left + margin;
+            // O quadro solto vem logo depois da ilha esquerda (ou na borda, sem ela).
+            int x = right ? area.Right - margin - width : ReferenceEquals(w, _frameIsland) ? leftEnd + margin : area.Left + margin;
             int y = bottom ? area.Bottom - height : area.Top;
             w.SetBounds(x, y, width, height);
+            if (ReferenceEquals(w, _leftIsland)) leftEnd = x + width;
             s.InvalidateVisual();
         }
     }
@@ -137,14 +147,20 @@ internal sealed partial class DockManager
         var battery = S("bateria", ("modo", "nivel"));
 
         // Skin com quadro do jogador: CPU e RAM viram as barras de vida e mana ao lado do retrato.
+        // Com o quadro inteiro (imagem), ele fica solto ao lado da ilha, maior, e leva também o disco
+        // na placa do nome; a ilha esquerda fica com o resto (ex.: o clima).
         bool unitFrame = _skin?.Skin.UnitFrame is not null && !_window!.UsesBackdrop
             && (Config.LeftItems.Contains("cpu") || Config.LeftItems.Contains("ram"));
-        bool unitFrameAdded = false;
+        bool separate = unitFrame && _skin!.Skin.UnitFrame!.HasFullFrame;
+        var diskSpec = S("disco", ("unidade", "C:"), ("modo", "livre"));
+        if (separate)
+            _frameItems.Add(new UnitFrameItem(S("cpu"), S("memoria"), Config.LeftItems.Contains("disco") ? diskSpec : null, OpenTaskManager) { Large = true });
+        bool unitFrameAdded = separate;
         foreach (var key in Core.Config.DockConfig.AllLeftItems.Where(k => Config.LeftItems.Contains(k)))
         {
-            if (unitFrame && key is "cpu" or "ram")
+            if (unitFrame && key is "cpu" or "ram" || separate && key == "disco")
             {
-                if (!unitFrameAdded) _leftItems.Add(new UnitFrameItem(S("cpu"), S("memoria"), OpenTaskManager));
+                if (!unitFrameAdded) _leftItems.Add(new UnitFrameItem(S("cpu"), S("memoria"), null, OpenTaskManager));
                 unitFrameAdded = true;
                 continue;
             }

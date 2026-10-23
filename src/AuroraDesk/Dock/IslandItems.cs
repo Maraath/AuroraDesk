@@ -288,24 +288,29 @@ internal sealed class AuroraItem(Action click) : IslandItem("aurora")
 /// Quadro do jogador (só com skin): retrato redondo com moldura e duas barras sobrepostas,
 /// CPU como "vida" e RAM como "mana". Substitui os itens CPU e RAM da ilha esquerda.
 /// </summary>
-internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action click) : IslandItem("quadro")
+internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, MeasureSpec? disk, Action click) : IslandItem("quadro")
 {
     private const double BarWidth = 132, BarHeight = 15, BarGap = 5;
 
-    public override IEnumerable<MeasureSpec> Specs => [cpu, ram];
+    public override IEnumerable<MeasureSpec> Specs => disk is null ? [cpu, ram] : [cpu, ram, disk];
+
+    /// <summary>Maior que as ilhas, numa janela solta ao lado delas (como o quadro do jogador num jogo).</summary>
+    public bool Large { get; init; }
     public override bool Clickable => true;
     public override string? Tooltip => "Processador e memória · clique para abrir o Gerenciador de Tarefas";
 
     private static double PortraitSize => 54;
 
     /// <summary>Quadro inteiro numa imagem (como o de um jogo): altura de desenho e a imagem.</summary>
-    private static (BitmapSource Image, double Height)? Full(IslandContext ctx)
+    private (BitmapSource Image, double Height)? Full(IslandContext ctx)
     {
         var f = ctx.Skin?.Skin.UnitFrame;
         if (f is not { HasFullFrame: true } || ctx.Skin!.Image(f.Full) is not { } img) return null;
-        // Dentro da ilha: a altura do painel, menos um respiro.
-        return (img, ctx.ContentHeight + 10);
+        // Solto (Large): bem maior que a ilha, para ler as barras. Dentro da ilha: a altura do painel.
+        return (img, Large ? (ctx.ContentHeight + 12) * 1.6 : ctx.ContentHeight + 10);
     }
+
+    public override double Height(IslandContext ctx) => Large ? Full(ctx)?.Height ?? 0 : 0;
 
     public override double Width(IslandContext ctx) =>
         Full(ctx) is { } full ? Math.Ceiling(full.Height * full.Image.PixelWidth / full.Image.PixelHeight) : PortraitSize + 8 + BarWidth;
@@ -355,14 +360,17 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action cli
 
         var cpuArea = Map(f.CpuArea!.Value);
         // Barras baixas demais para texto (o quadro cabe na ilha): os valores vão para a placa do nome.
-        bool textInBars = cpuArea.Height >= 10;
+        bool textInBars = cpuArea.Height >= 8.5;
         FullBar(dc, ctx, cpuArea, M(0), f.CpuBar, new ArgbColor(255, 0, 0xC8, 0), textInBars ? "CPU" : null);
         FullBar(dc, ctx, Map(f.RamArea!.Value), M(1), f.RamBar, new ArgbColor(255, 0, 0x30, 0xE0), textInBars ? "RAM" : null);
         if (f.NameArea is { } na)
         {
             var nr = Map(na);
             dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(170, 0, 0, 0)), null, nr);
-            string label = textInBars ? f.NameText ?? "Aurora" : $"CPU {M(0)?.Value ?? 0:0}%  ·  RAM {M(1)?.Value ?? 0:0}%";
+            // Na placa do nome: o disco (se estiver nas ilhas), senão o nome; com barras baixas, os valores.
+            string label = !textInBars ? $"CPU {M(0)?.Value ?? 0:0}%  ·  RAM {M(1)?.Value ?? 0:0}%"
+                : disk is not null && M(2) is { } dm ? $"Disco C: {dm.Text} livres"
+                : f.NameText ?? "Aurora";
             Outlined(dc, ctx, label, Math.Clamp(nr.Height * 0.78, 9, 12), ctx.TextColor, nr);
         }
         dc.DrawImage(img, box);
@@ -379,7 +387,7 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action cli
             else dc.DrawRectangle(ctx.Themes.Brush(fallback), null, r);
             dc.Pop();
         }
-        if (label is not null) Outlined(dc, ctx, $"{label} {m?.Value ?? 0:0}%", Math.Min(11, r.Height * 0.95), new ArgbColor(255, 0xFF, 0xFF, 0xFF), r);
+        if (label is not null) Outlined(dc, ctx, $"{label} {m?.Value ?? 0:0}%", Math.Min(12, r.Height * 1.0), new ArgbColor(255, 0xFF, 0xFF, 0xFF), r);
     }
 
     /// <summary>Texto centrado com contorno escuro (legível em cima de qualquer barra); diminui até caber na largura.</summary>

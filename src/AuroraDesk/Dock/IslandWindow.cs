@@ -99,9 +99,14 @@ internal sealed class IslandSurface : FrameworkElement
     public bool SystemBackdrop { get; set; }
     /// <summary>Skin de imagens (null = desenho do tema).</summary>
     public DockSkinRenderer? Skin { get; set; }
+    /// <summary>
+    /// Solta: sem painel por trás e do tamanho dos itens (ex.: o quadro do jogador da skin, ao lado
+    /// das ilhas, como no jogo).
+    /// </summary>
+    public bool Bare { get; set; }
 
     /// <summary>Distância dos itens até a borda: com skin, por dentro da moldura e com um respiro.</summary>
-    private double InnerPadding => Skin is { } s && s.HasPanel(_alignRight ? 'd' : 'e')
+    private double InnerPadding => Bare ? 0 : Skin is { } s && s.HasPanel(_alignRight ? 'd' : 'e')
         ? Math.Max(Padding - 2, s.PanelInset(_alignRight ? 'd' : 'e', PanelThickness) + 9)
         : Padding;
 
@@ -135,7 +140,7 @@ internal sealed class IslandSurface : FrameworkElement
         {
             var ctx = Context();
             double tallest = _items.Where(i => i.Visible).Select(i => i.Height(ctx)).DefaultIfEmpty(0).Max();
-            return Math.Max(PanelThickness, tallest + 6) + EdgeGap;
+            return Math.Max(PanelThickness, tallest + (Bare ? 0 : 6)) + EdgeGap;
         }
     }
 
@@ -148,6 +153,23 @@ internal sealed class IslandSurface : FrameworkElement
         if (width <= 0) { _panel = Rect.Empty; return; }
 
         double x0 = _alignRight ? ActualWidth - width : 0;
+        if (Bare)
+        {
+            // Sem painel: cada item ocupa a altura toda, rente ao pé (ou ao topo) da janela.
+            double tall = Math.Max(PanelThickness, _items.Where(i => i.Visible).Select(i => i.Height(ctx)).DefaultIfEmpty(0).Max());
+            _panel = new Rect(x0, Bottom ? ActualHeight - EdgeGap - tall : EdgeGap, width, tall);
+            double bx = x0;
+            foreach (var item in _items.Where(i => i.Visible))
+            {
+                double w = item.Width(ctx);
+                var area = new Rect(bx, _panel.Y, w, _panel.Height);
+                _layout.Add((item, area));
+                try { item.Draw(dc, ctx, area); }
+                catch (Exception ex) { Core.Logging.Log.Error($"Item '{item.Key}' da ilha falhou", ex); }
+                bx += w + Gap;
+            }
+            return;
+        }
         double y0 = Bottom ? ActualHeight - EdgeGap - PanelThickness : EdgeGap;
         if (SystemBackdrop) { x0 = 0; y0 = 0; width = ActualWidth; }
         _panel = new Rect(x0, y0, width, SystemBackdrop ? ActualHeight : PanelThickness);
