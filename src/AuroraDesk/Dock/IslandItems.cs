@@ -307,7 +307,7 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, MeasureSpe
         var f = ctx.Skin?.Skin.UnitFrame;
         if (f is not { HasFullFrame: true } || ctx.Skin!.Image(f.Full) is not { } img) return null;
         // Solto (Large): bem maior que a ilha, para ler as barras. Dentro da ilha: a altura do painel.
-        return (img, Large ? (ctx.ContentHeight + 12) * 1.6 : ctx.ContentHeight + 10);
+        return (img, Large ? (ctx.ContentHeight + 12) * 1.3 : ctx.ContentHeight + 10);
     }
 
     public override double Height(IslandContext ctx) => Large ? Full(ctx)?.Height ?? 0 : 0;
@@ -360,23 +360,33 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, MeasureSpe
 
         var cpuArea = Map(f.CpuArea!.Value);
         // Barras baixas demais para texto (o quadro cabe na ilha): os valores vão para a placa do nome.
-        bool textInBars = cpuArea.Height >= 8.5;
-        FullBar(dc, ctx, cpuArea, M(0), f.CpuBar, new ArgbColor(255, 0, 0xC8, 0), textInBars ? "CPU" : null);
-        FullBar(dc, ctx, Map(f.RamArea!.Value), M(1), f.RamBar, new ArgbColor(255, 0, 0x30, 0xE0), textInBars ? "RAM" : null);
-        if (f.NameArea is { } na)
+        var ramArea = Map(f.RamArea!.Value);
+        bool textInBars = cpuArea.Height >= 7;
+        FullBar(dc, ctx, cpuArea, M(0), f.CpuBar, new ArgbColor(255, 0, 0xC8, 0));
+        FullBar(dc, ctx, ramArea, M(1), f.RamBar, new ArgbColor(255, 0, 0x30, 0xE0));
+        Rect? nameArea = f.NameArea is { } na ? Map(na) : null;
+        if (nameArea is { } nr0) dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(170, 0, 0, 0)), null, nr0);
+        dc.DrawImage(img, box);
+
+        // Textos por último, por cima da moldura: a borda dela não corta as letras.
+        if (textInBars)
         {
-            var nr = Map(na);
-            dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(170, 0, 0, 0)), null, nr);
+            var white = new ArgbColor(255, 0xFF, 0xFF, 0xFF);
+            double size = Math.Clamp(cpuArea.Height * 1.05, 9, 11);
+            Outlined(dc, ctx, $"CPU {M(0)?.Value ?? 0:0}%", size, white, cpuArea);
+            Outlined(dc, ctx, $"RAM {M(1)?.Value ?? 0:0}%", size, white, ramArea);
+        }
+        if (nameArea is { } nr)
+        {
             // Na placa do nome: o disco (se estiver nas ilhas), senão o nome; com barras baixas, os valores.
             string label = !textInBars ? $"CPU {M(0)?.Value ?? 0:0}%  ·  RAM {M(1)?.Value ?? 0:0}%"
                 : disk is not null && M(2) is { } dm ? $"Disco C: {dm.Text} livres"
                 : f.NameText ?? "Aurora";
             Outlined(dc, ctx, label, Math.Clamp(nr.Height * 0.78, 9, 12), ctx.TextColor, nr);
         }
-        dc.DrawImage(img, box);
     }
 
-    private static void FullBar(DrawingContext dc, IslandContext ctx, Rect r, Measure? m, SkinImage? fill, ArgbColor fallback, string? label)
+    private static void FullBar(DrawingContext dc, IslandContext ctx, Rect r, Measure? m, SkinImage? fill, ArgbColor fallback)
     {
         dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(200, 0, 0, 0)), null, r);
         double frac = Math.Clamp(m?.Fraction ?? 0, 0, 1);
@@ -387,7 +397,6 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, MeasureSpe
             else dc.DrawRectangle(ctx.Themes.Brush(fallback), null, r);
             dc.Pop();
         }
-        if (label is not null) Outlined(dc, ctx, $"{label} {m?.Value ?? 0:0}%", Math.Min(12, r.Height * 1.0), new ArgbColor(255, 0xFF, 0xFF, 0xFF), r);
     }
 
     /// <summary>Texto centrado com contorno escuro (legível em cima de qualquer barra); diminui até caber na largura.</summary>
