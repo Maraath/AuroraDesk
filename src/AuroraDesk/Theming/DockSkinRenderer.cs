@@ -67,7 +67,8 @@ internal sealed class DockSkinRenderer
         var bmp = new BitmapImage();
         bmp.BeginInit();
         bmp.CacheOption = BitmapCacheOption.OnLoad; // não prende o arquivo: dá para editar com o app aberto
-        bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+        // Sem o cache de imagens do WPF (por caminho): ao salvar o PNG com o app aberto, vale a versão nova.
+        bmp.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
         bmp.UriSource = new Uri(path);
         if (width > 0) bmp.DecodePixelWidth = width;
         if (height > 0) bmp.DecodePixelHeight = height;
