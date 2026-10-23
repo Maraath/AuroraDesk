@@ -95,6 +95,12 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
   - Correção: a configuração foi levada da cópia para o `AppData` real, a cópia foi removida e o app passou a ser aberto com `tools\abrir.ps1` (via WMI, fora do pacote).
   - Consequência para medições anteriores: testes de configuração feitos com o app aberto a partir do Claude desktop valeram para a cópia do pacote. O estado da barra do Windows (`ABM_SETSTATE`) e o registro não são redirecionados.
 
+- **Skins de imagens do dock e das ilhas** (skin Pedra, conferida em captura ampliada):
+  - Moldura em 9 partes, encaixes nos ícones, quadro do jogador, botões redondos e medalhão do relógio.
+  - O meio da moldura se repete sem esticar. A primeira versão esticava a pedra, que virava listras.
+  - Custo com o app aberto há ~1 min (medido no processo, não com `medir.ps1`, para não abrir o app dentro do pacote do Claude): 69,0 MB de Private Bytes, contra 68,5 MB sem skin, e 0,28% de CPU ociosa em 30 s, com o PC carregado (RAM em 94%).
+  - Pontas (grifos): o motor está pronto, mas a skin Pedra não traz imagem. Não testadas com imagem real.
+
 Não verificado (ou verificado só parcialmente):
 
 - Molduras em janelas novas do Explorer: o Windows deste PC abre pastas como abas da janela existente, então o caminho "janela nova" foi coberto pela reaplicação ao iniciar e ao ganhar o foco, não por uma janela nova de fato.

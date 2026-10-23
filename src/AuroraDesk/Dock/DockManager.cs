@@ -6,6 +6,7 @@ using AuroraDesk.Core.Dock;
 using AuroraDesk.Core.Logging;
 using AuroraDesk.Infrastructure;
 using AuroraDesk.Interop;
+using AuroraDesk.Theming;
 using AuroraDesk.Tray;
 
 namespace AuroraDesk.Dock;
@@ -24,6 +25,9 @@ internal sealed partial class DockManager : IDisposable
     private readonly Dictionary<string, string> _exeNames = new(StringComparer.OrdinalIgnoreCase);
     private RunningWindows? _running;
     private DockWindow? _window;
+    private DockSkinRenderer? _skin;
+    private string? _skinLoaded;
+    private DebouncedWatcher? _skinWatcher;
     private List<DockEntry> _entries = [];
     private bool _fullscreen;
     private string _layoutKey = "";
@@ -51,6 +55,7 @@ internal sealed partial class DockManager : IDisposable
         // Atalhos fixados antes desta versão também ganham uma cópia guardada.
         if (_shortcuts.KeepAll(Config.Items)) _host.SaveConfig();
         MigratePackagedApps();
+        InstallBundledSkins();
         _host.Themes.Changed += OnThemeChanged;
         _host.Control.Message += OnControlMessage;
         if (_host.State is { } state) state.Changed += OnStateChanged;
@@ -302,10 +307,82 @@ internal sealed partial class DockManager : IDisposable
         _ => DockEdge.Bottom,
     };
 
+    /// <summary>
+    /// Carrega a skin de imagens escolhida (ou nenhuma). A pasta é vigiada: salvar um PNG ou o
+    /// skin.json com o app aberto recarrega o dock e as ilhas.
+    /// </summary>
+    private void LoadSkin()
+    {
+        if (Config.Skin == _skinLoaded) return;
+        _skinLoaded = Config.Skin;
+        _skinWatcher?.Dispose();
+        _skinWatcher = null;
+        _skin = null;
+        if (string.IsNullOrWhiteSpace(Config.Skin)) return;
+        string folder = Path.Combine(_host.Paths.DockSkins, Config.Skin);
+        if (!Directory.Exists(folder)) { Log.Warn($"Skin do dock '{Config.Skin}' não existe em {folder}"); return; }
+        _skin = DockSkinRenderer.TryLoad(folder);
+        _skinWatcher = new DebouncedWatcher(folder, "*.*", false, _host.Dispatcher, delayMs: 500);
+        _skinWatcher.Changed += _ => { _skinLoaded = null; if (_window is not null) ApplyConfig(); };
+    }
+
+    /// <summary>
+    /// Copia as skins que vêm com o app para a pasta do usuário e atualiza os arquivos quando o app
+    /// traz uma versão mais nova. Para personalizar, o usuário copia a pasta com outro nome.
+    /// </summary>
+    private void InstallBundledSkins()
+    {
+        try
+        {
+            string bundled = Path.Combine(AppContext.BaseDirectory, "skins-dock");
+            if (!Directory.Exists(bundled)) return;
+            foreach (var dir in Directory.GetDirectories(bundled))
+            {
+                string target = Directory.CreateDirectory(Path.Combine(_host.Paths.DockSkins, Path.GetFileName(dir))).FullName;
+                foreach (var file in Directory.GetFiles(dir))
+                {
+                    string dest = Path.Combine(target, Path.GetFileName(file));
+                    if (!File.Exists(dest) || File.GetLastWriteTimeUtc(file) > File.GetLastWriteTimeUtc(dest)) File.Copy(file, dest, overwrite: true);
+                }
+            }
+            string readme = Path.Combine(_host.Paths.DockSkins, "LEIA-ME.txt");
+            File.WriteAllText(readme, SkinReadme, System.Text.Encoding.UTF8);
+        }
+        catch (Exception ex) { Log.Error("Não foi possível instalar as skins do dock", ex); }
+    }
+
+    private const string SkinReadme = """
+        Skins de imagens do dock e das ilhas do Aurora Desk
+        ===================================================
+
+        Cada pasta aqui é uma skin: um skin.json e imagens PNG (com transparência). Escolha a skin em
+        Configurações > Dock > Aparência > Skin de imagens. Ao salvar uma imagem ou o skin.json com o
+        app aberto, o dock recarrega sozinho.
+
+        Peças (todas opcionais; a que faltar continua desenhada pelo tema):
+          painel            moldura das ilhas e do dock, cortada em 9 partes ("margens" em pixels da imagem)
+          painelEsquerda/Centro/Direita   moldura própria de uma ilha
+          encaixe           borda por cima de cada ícone (quadrada, com o meio transparente) e "fundo" atrás
+          pontas            esculturas nas pontas da ilha central (ex.: grifos); sem "direita", espelha a esquerda
+          quadro            retrato redondo com moldura e barras de CPU (vida) e RAM (mana) na ilha esquerda
+          medalhao          aro redondo do relógio (o centro deve ser escuro ou transparente)
+          botaoRedondo      fundo redondo dos ícones da bandeja
+          fonte, corTexto, corTextoSecundario   um .ttf/.otf nesta pasta também vale
+
+        Tamanhos que funcionam bem: painel 256x128 (margens ~28), encaixe 128x128, medalhão 256x256,
+        botão redondo 96x96, pontas com até 512 px de altura. Imagens maiores são reduzidas ao carregar.
+
+        Imagens de jogos e de outros artistas pertencem a quem as criou: use-as só no seu PC.
+        Modelo comentado do skin.json: a skin "Pedra" que vem com o app. Ela é atualizada junto com o
+        app; para personalizar, copie a pasta com outro nome (ou use "Criar skin nova" nas configurações).
+        """;
+
     private void ApplySurfaceSettings()
     {
         if (_window is null) return;
+        LoadSkin();
         var s = _window.Surface;
+        s.Skin = _window.UsesBackdrop ? null : _skin;
         s.Edge = ParseEdge(Config.Edge);
         s.IconSize = Math.Clamp(Config.IconSize, 24, 96);
         s.Spacing = Math.Clamp(Config.Spacing, 0, 24);
@@ -679,5 +756,6 @@ internal sealed partial class DockManager : IDisposable
         _host.Control.Message -= OnControlMessage;
         Close();
         _running?.Dispose();
+        _skinWatcher?.Dispose();
     }
 }

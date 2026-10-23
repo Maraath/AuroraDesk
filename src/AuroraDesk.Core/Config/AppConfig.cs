@@ -126,6 +126,12 @@ public sealed class DockConfig
     public string SearchEngine { get; set; } = "google";
     /// <summary>"nenhum", "acrilico" ou "mica".</summary>
     public string Backdrop { get; set; } = "nenhum";
+
+    /// <summary>
+    /// Skin de imagens do dock e das ilhas: nome de uma pasta em %APPDATA%\AuroraDesk\skins-dock
+    /// (null = desenho do tema). Ver <c>DockSkin</c>.
+    /// </summary>
+    public string? Skin { get; set; }
     public List<DockItem> Items { get; set; } = [];
 
     /// <summary>

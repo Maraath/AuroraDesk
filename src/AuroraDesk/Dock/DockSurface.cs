@@ -57,13 +57,19 @@ internal sealed class DockSurface : FrameworkElement
     public double EdgeGap { get; set; } = 8;
     /// <summary>Fundo desenhado pelo DWM (Mica/Acrílico): não pinta o painel.</summary>
     public bool SystemBackdrop { get; set; }
+    /// <summary>Skin de imagens (null = desenho do tema).</summary>
+    public DockSkinRenderer? Skin { get; set; }
+
+    /// <summary>Quanto as pontas da skin (ex.: grifos) passam de cada lado do painel.</summary>
+    public double CapsExtent => Horizontal && Skin is not null ? Skin.CapsExtent(PanelThickness) : 0;
 
     public bool Horizontal => Edge is DockEdge.Bottom or DockEdge.Top;
     public double PanelThickness => IconSize + 2 * Padding + IndicatorBand;
     public bool IsHidden => _hideTarget >= 1;
 
     /// <summary>Espessura total necessária para a janela (painel + ampliação + nome).</summary>
-    public double RequiredThickness => EdgeGap + PanelThickness + (Zoom > 1 ? IconSize * (Zoom - 1) : 0) + (ShowLabels ? LabelSpace : 4);
+    public double RequiredThickness => Math.Max(EdgeGap + PanelThickness + (Zoom > 1 ? IconSize * (Zoom - 1) : 0) + (ShowLabels ? LabelSpace : 4),
+        EdgeGap + (Horizontal && Skin is not null ? Skin.CapsHeight(PanelThickness) : 0) + 4);
 
     /// <summary>Comprimento máximo do painel (com a ampliação no meio).</summary>
     public double RequiredLength()
@@ -170,7 +176,8 @@ internal sealed class DockSurface : FrameworkElement
         double e0 = EdgeGap - shift, e1 = EdgeGap + PanelThickness - shift;
         var panel = R(start, length, e0, e1);
         double radius = Math.Min(theme.CornerRadius + 4, PanelThickness / 2);
-        if (!SystemBackdrop)
+        if (!SystemBackdrop && Skin?.HasPanel('c') == true) Skin.DrawPanel(dc, 'c', panel);
+        else if (!SystemBackdrop)
             dc.DrawRoundedRectangle(_themes.Brush(theme.Panel), _themes.Pen(theme.Border.WithOpacity(0.6), 1), panel, radius, radius);
 
         Rect hit = panel;
@@ -193,10 +200,17 @@ internal sealed class DockSurface : FrameworkElement
             var iconRect = R(start + slot.Start, slot.Size, iconEdge, iconEdge + slot.Size);
             hit.Union(iconRect);
             if (_dragging && i == _pressIndex) dc.PushOpacity(0.35);
-            if (e.IsGroup) DrawGroup(dc, theme, e.GroupIcons ?? [], iconRect, i == _dropGroup);
-            else if (e.Glyph is { } glyph) DrawGlyphButton(dc, theme, glyph, iconRect, i == _hover);
-            else if (e.Icon is { } icon) dc.DrawImage(icon, iconRect);
-            else dc.DrawRoundedRectangle(_themes.Brush(theme.Surface), null, iconRect, 8, 8);
+            int index = i;
+            void DrawIcon(Rect r)
+            {
+                if (e.IsGroup) DrawGroup(dc, theme, e.GroupIcons ?? [], r, index == _dropGroup);
+                else if (e.Glyph is { } glyph) DrawGlyphButton(dc, theme, glyph, r, index == _hover);
+                else if (e.Icon is { } icon) dc.DrawImage(icon, r);
+                else dc.DrawRoundedRectangle(_themes.Brush(theme.Surface), null, r, 8, 8);
+            }
+            // Com skin, cada ícone vai num encaixe (fundo, ícone menor e moldura por cima), como uma barra de ações.
+            if (Skin?.HasSlot == true) Skin.DrawSlot(dc, iconRect, DrawIcon);
+            else DrawIcon(iconRect);
             if (_dragging && i == _pressIndex) dc.Pop();
 
             if (e.IsRunning)
@@ -208,6 +222,9 @@ internal sealed class DockSurface : FrameworkElement
                     dc.DrawEllipse(dot, null, c, 2.2, 2.2);
             }
         }
+
+        // Pontas (ex.: grifos) na frente dos ícones, como na barra de um jogo; só com o dock embaixo.
+        if (!SystemBackdrop && Edge == DockEdge.Bottom) Skin?.DrawCaps(dc, panel);
 
         if (_dragging && _insertIndex >= 0 && _entries.Count > 0)
         {

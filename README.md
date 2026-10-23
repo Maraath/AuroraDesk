@@ -217,6 +217,22 @@ Num texto sem `largura`, `x` é a âncora: a esquerda, o centro ou a direita do 
 
 Posição, camada, escala, opacidade, fonte do widget e monitor ficam no `config.json`, **não** no skin. Por isso, editar o skin não move o widget.
 
+## Skins de imagens do dock e das ilhas
+
+Além dos temas de cores, o dock e as ilhas aceitam **skins feitas de imagens PNG**, como a interface de um jogo. Escolha em **Configurações → Dock → Aparência → Skin de imagens**.
+
+- Cada skin é uma pasta em `%APPDATA%\AuroraDesk\skins-dock\<nome>` com um `skin.json` e as imagens. "Criar skin nova…" cria a pasta com o modelo comentado.
+- Peças, todas opcionais (a que faltar continua desenhada pelo tema):
+  - `painel`: moldura das ilhas e do dock, cortada em 9 partes. Os cantos não esticam e o meio se repete sem esticar.
+  - `encaixe`: borda e fundo de cada ícone, como os botões de uma barra de ações.
+  - `pontas`: esculturas nas pontas da ilha central (ex.: grifos). Sem a direita, a esquerda é espelhada.
+  - `quadro`: na ilha esquerda, retrato redondo com barras de CPU (vida) e RAM (mana).
+  - `medalhao`: aro do relógio. `botaoRedondo`: fundo dos ícones da bandeja.
+  - `fonte` (instalada ou um `.ttf` da pasta) e cores do texto.
+- Salvar uma imagem com o app aberto recarrega o dock na hora.
+- A skin **Pedra** vem com o app: texturas procedurais próprias (`tools\gerar-skin-pedra.ps1`), livres para usar. Ela é atualizada junto com o app; para personalizar, copie a pasta com outro nome.
+- Imagens de jogos e de outros artistas pertencem a quem as criou: use-as só no seu PC.
+
 ## Como criar um tema
 
 Em Configurações → Temas → "Duplicar tema atual", ou crie `%APPDATA%\AuroraDesk\themes\meu-tema.json`:

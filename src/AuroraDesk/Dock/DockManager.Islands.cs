@@ -54,6 +54,7 @@ internal sealed partial class DockManager
     {
         if (items.Count == 0) return null;
         var w = new IslandWindow(_host.Themes, alignRight);
+        w.Surface.Skin = _window!.UsesBackdrop ? null : _skin;
         w.Surface.SetItems(items);
         w.Surface.RightClicked += () => OnContextRequested(-1);
         w.Surface.MouseEnter += (_, _) => _hideTimer.Stop();
@@ -135,8 +136,18 @@ internal sealed partial class DockManager
         static MeasureSpec S(string type, params (string, string)[] o) => new(type, o.ToDictionary(p => p.Item1, p => p.Item2));
         var battery = S("bateria", ("modo", "nivel"));
 
+        // Skin com quadro do jogador: CPU e RAM viram as barras de vida e mana ao lado do retrato.
+        bool unitFrame = _skin?.Skin.UnitFrame is not null && !_window!.UsesBackdrop
+            && (Config.LeftItems.Contains("cpu") || Config.LeftItems.Contains("ram"));
+        bool unitFrameAdded = false;
         foreach (var key in Core.Config.DockConfig.AllLeftItems.Where(k => Config.LeftItems.Contains(k)))
         {
+            if (unitFrame && key is "cpu" or "ram")
+            {
+                if (!unitFrameAdded) _leftItems.Add(new UnitFrameItem(S("cpu"), S("memoria"), OpenTaskManager));
+                unitFrameAdded = true;
+                continue;
+            }
             IslandItem? item = key switch
             {
                 "cpu" => new StatItem("cpu", "CPU", S("cpu"), "100%", bar: true, m => $"{m.Value:0}%", OpenTaskManager, "Uso do processador · clique para abrir o Gerenciador de Tarefas"),
@@ -327,12 +338,12 @@ internal sealed class WeatherItem(Func<string> city, Func<bool> enabled) : Islan
     private string Value => M(0) is { } t && t.Text != "--" ? $"{t.Text}° {M(1)?.Text}" : "--";
 
     public override double Width(IslandContext ctx) =>
-        Math.Ceiling(Math.Min(170, Math.Max(ctx.Text(city(), 11, ctx.Theme.TextSecondary).Width, ctx.Text(Value, 13, ctx.Theme.Text).Width)));
+        Math.Ceiling(Math.Min(170, Math.Max(ctx.Text(city(), 11, ctx.SecondaryColor).Width, ctx.Text(Value, 13, ctx.TextColor).Width)));
 
     public override void Draw(System.Windows.Media.DrawingContext dc, IslandContext ctx, System.Windows.Rect area)
     {
-        var label = ctx.Text(city(), 11, ctx.Theme.TextSecondary);
-        var value = ctx.Text(Value, 13, ctx.Theme.Text);
+        var label = ctx.Text(city(), 11, ctx.SecondaryColor);
+        var value = ctx.Text(Value, 13, ctx.TextColor);
         value.MaxTextWidth = Math.Max(1, area.Width);
         value.MaxLineCount = 1;
         value.Trimming = System.Windows.TextTrimming.CharacterEllipsis;

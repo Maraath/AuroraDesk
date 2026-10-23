@@ -1,0 +1,14 @@
+// Skin "Pedra": texturas procedurais do próprio Aurora (tools\gerar-skin-pedra.ps1), livres para usar e modificar.
+// Para os grifos, coloque um PNG com transparência nesta pasta e preencha "pontas".
+{
+  "nome": "Pedra",
+  "painel": { "imagem": "painel.png", "margens": [26, 26, 26, 26] },
+  "encaixe": { "imagem": "encaixe.png", "fundo": "fundo-encaixe.png", "recuo": 0.1, "margem": 0.06 },
+  // "pontas": { "esquerda": "ponta-esquerda.png", "altura": 1.7, "sobreposicao": 0.3, "deslocamentoY": 0 },
+  "quadro": { "moldura": "moldura-retrato.png", "fundoBarra": { "imagem": "barra-fundo.png", "margens": [6, 6] }, "barraCpu": "barra-cpu.png", "barraRam": "barra-ram.png" },
+  "medalhao": "medalhao.png",
+  "botaoRedondo": "botao-redondo.png",
+  "fonte": "Georgia",
+  "corTexto": "#FFD100",
+  "corTextoSecundario": "#E8D9B0"
+}

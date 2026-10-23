@@ -256,7 +256,14 @@ internal sealed class SettingsWindow : Window
             Ui.Row("Intensidade da ampliação", Ui.Slider(1.1, 2.0, d.ZoomFactor, 0.05, v => $"{v * 100:0}%", v => Apply(() => d.ZoomFactor = v))),
             Ui.Row("Mostrar nomes ao passar o mouse", Ui.Toggle(d.ShowLabels, v => Apply(() => d.ShowLabels = v))),
             Ui.Row("Fundo", Ui.Combo([("Cor do tema", "nenhum"), ("Acrílico", "acrilico"), ("Desfoque", "desfoque")], d.Backdrop is "acrilico" or "desfoque" ? d.Backdrop : "nenhum", v => Apply(() => d.Backdrop = v)),
-                "Acrílico e desfoque usam o compositor do Windows sem GPU no app; neles a ampliação e os nomes ficam desligados.")));
+                "Acrílico e desfoque usam o compositor do Windows sem GPU no app; neles a ampliação e os nomes ficam desligados."),
+            Ui.Row("Skin de imagens", Ui.Combo(
+                    new[] { ("Nenhuma (desenho do tema)", "") }.Concat(Core.Theming.DockSkinStore.List(_host.Paths.DockSkins).Select(n => (n, n))),
+                    d.Skin ?? "", v => Apply(() => d.Skin = v.Length == 0 ? null : v)),
+                "Molduras, encaixes dos ícones, pontas (ex.: grifos), quadro do jogador e medalhão do relógio feitos de imagens PNG. Vale com o fundo \"Cor do tema\"."),
+            Ui.Buttons(
+                Ui.Button("Abrir pasta de skins", () => AppHost.OpenFolder(_host.Paths.DockSkins)),
+                Ui.Button("Criar skin nova…", CreateDockSkin))));
 
         page.Children.Add(Ui.Section("Itens fixados"));
         page.Children.Add(Ui.Note("Também dá para arrastar arquivos, atalhos e pastas para o dock, reordenar arrastando e remover arrastando para fora. Grupos: clique direito no dock → \"Criar grupo de atalhos\"; arraste atalhos para cima do grupo para colocá-los dentro."));
@@ -294,6 +301,19 @@ internal sealed class SettingsWindow : Window
             _host.Dock.ApplyConfig();
             Refresh();
         }
+    }
+
+    /// <summary>Cria uma pasta de skin com o skin.json comentado e abre a pasta para pôr as imagens.</summary>
+    private void CreateDockSkin()
+    {
+        string root = _host.Paths.DockSkins;
+        string name = "Minha skin";
+        for (int n = 2; Directory.Exists(Path.Combine(root, name)); n++) name = $"Minha skin {n}";
+        string dir = Directory.CreateDirectory(Path.Combine(root, name)).FullName;
+        File.WriteAllText(Path.Combine(dir, Core.Theming.DockSkinStore.FileName), Core.Theming.DockSkinStore.Template(name), new System.Text.UTF8Encoding(false));
+        Core.Logging.Log.Info($"Skin nova criada: {dir}");
+        AppHost.OpenFolder(dir);
+        Refresh();
     }
 
     private static string KindLabel(string kind) => kind switch { "pasta" => "Pasta", "app" => "App", _ => "Arquivo" };

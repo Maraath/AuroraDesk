@@ -24,5 +24,7 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\aurora.ico" />
+    <!-- Skins de imagens que vêm com o app (copiadas para %APPDATA%\AuroraDesk\skins-dock na primeira vez). -->
+    <Content Include="skins-dock\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

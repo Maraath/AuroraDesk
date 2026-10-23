@@ -97,6 +97,8 @@ internal sealed class IslandSurface : FrameworkElement
     public double EdgeGap { get; set; } = 8;
     public bool Bottom { get; set; } = true;
     public bool SystemBackdrop { get; set; }
+    /// <summary>Skin de imagens (null = desenho do tema).</summary>
+    public DockSkinRenderer? Skin { get; set; }
 
     /// <summary>Espaço entre itens.</summary>
     public double Gap => _alignRight ? 12 : 18;
@@ -110,7 +112,7 @@ internal sealed class IslandSurface : FrameworkElement
         InvalidateVisual();
     }
 
-    private IslandContext Context() => new(_themes, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+    private IslandContext Context() => new(_themes, VisualTreeHelper.GetDpi(this).PixelsPerDip, Skin);
 
     /// <summary>Largura do painel em DIPs com o conteúdo atual.</summary>
     public double RequiredWidth()
@@ -136,7 +138,9 @@ internal sealed class IslandSurface : FrameworkElement
         if (SystemBackdrop) { x0 = 0; y0 = 0; width = ActualWidth; }
         _panel = new Rect(x0, y0, width, SystemBackdrop ? ActualHeight : PanelThickness);
         double radius = Math.Min(theme.CornerRadius + 4, PanelThickness / 2);
-        if (!SystemBackdrop)
+        char island = _alignRight ? 'd' : 'e';
+        if (!SystemBackdrop && Skin?.HasPanel(island) == true) Skin.DrawPanel(dc, island, _panel);
+        else if (!SystemBackdrop)
             dc.DrawRoundedRectangle(_themes.Brush(theme.Panel), _themes.Pen(theme.Border.WithOpacity(0.6), 1), _panel, radius, radius);
 
         double x = x0 + Padding;

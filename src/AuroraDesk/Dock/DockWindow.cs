@@ -82,7 +82,7 @@ internal sealed unsafe class DockWindow : Window
         var info = Win32.MonitorInfo(monitor);
         double scale = Win32.MonitorScale(monitor);
 
-        double lengthDip = Surface.RequiredLength() + (UsesBackdrop ? 0 : 48);
+        double lengthDip = Surface.RequiredLength() + (UsesBackdrop ? 0 : 48 + 2 * Surface.CapsExtent);
         double thicknessDip = UsesBackdrop ? Surface.PanelThickness : Surface.RequiredThickness;
         int length = (int)Math.Ceiling(lengthDip * scale);
         int thickness = (int)Math.Ceiling(thicknessDip * scale);
