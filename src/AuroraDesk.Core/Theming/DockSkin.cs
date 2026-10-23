@@ -57,6 +57,13 @@ public sealed class DockSkin
     /// <summary>Moldura desenhada por cima de cada ícone e o fundo atrás dele.</summary>
     public SkinImage? Slot { get; init; }
     public SkinImage? SlotBackground { get; init; }
+    /// <summary>
+    /// Célula da barra (moldura e fundo de um botão, como a faixa dividida da barra de ações de um
+    /// jogo): uma por ícone, do tamanho do passo entre eles, emendadas umas nas outras.
+    /// </summary>
+    public SkinImage? SlotCell { get; init; }
+    /// <summary>Peça vertical (ex.: poste de metal) no lugar dos separadores do dock.</summary>
+    public SkinImage? Divider { get; init; }
     /// <summary>Quanto o ícone encolhe dentro do encaixe (fração do tamanho, de cada lado).</summary>
     public double SlotInset { get; init; } = 0.12;
     /// <summary>Quanto a moldura do encaixe passa para fora do ícone (fração, de cada lado).</summary>
@@ -82,7 +89,7 @@ public sealed class DockSkin
     /// <summary>Todas as imagens usadas (para carregar e para vigiar mudanças).</summary>
     public IEnumerable<SkinImage> Images() => new[]
     {
-        Panel, PanelLeft, PanelCenter, PanelRight, Slot, SlotBackground, Caps?.Left, Caps?.Right,
+        Panel, PanelLeft, PanelCenter, PanelRight, Slot, SlotBackground, SlotCell, Divider, Caps?.Left, Caps?.Right,
         UnitFrame?.Frame, UnitFrame?.Portrait, UnitFrame?.BarBackground, UnitFrame?.CpuBar, UnitFrame?.RamBar, UnitFrame?.Full, Medallion, RoundButton,
     }.OfType<SkinImage>();
 }
@@ -155,6 +162,8 @@ public static class DockSkinStore
             PanelRight = Img(r, "painelDireita"),
             Slot = slot.ValueKind == JsonValueKind.Object ? Img(slot, "imagem") ?? Img(r, "encaixe") : Img(r, "encaixe"),
             SlotBackground = slot.ValueKind == JsonValueKind.Object ? Img(slot, "fundo") : null,
+            SlotCell = slot.ValueKind == JsonValueKind.Object ? Img(slot, "celula") : null,
+            Divider = slot.ValueKind == JsonValueKind.Object ? Img(slot, "divisor") : null,
             SlotInset = slot.ValueKind == JsonValueKind.Object ? Math.Clamp(Num(slot, "recuo", 0.12), 0, 0.4) : 0.12,
             SlotOutset = slot.ValueKind == JsonValueKind.Object ? Math.Clamp(Num(slot, "margem", 0.04), 0, 0.5) : 0.04,
             Caps = capsSpec,
@@ -209,6 +218,7 @@ public static class DockSkinStore
           "painel": { "imagem": "painel.png", "margens": [24, 24, 24, 24] },
           // Borda de cada ícone (por cima) e fundo (por baixo). recuo: quanto o ícone encolhe; margem: quanto a borda passa do ícone.
           "encaixe": { "imagem": "encaixe.png", "fundo": "fundo-encaixe.png", "recuo": 0.12, "margem": 0.06 },
+          // Opcional: "celula" (uma por ícone, emendadas, como a barra dividida de um jogo) e "divisor" (no lugar dos separadores).
           // Esculturas nas pontas da ilha central. altura: em relação ao painel; sobreposicao: quanto entra no painel (0 a 1).
           // Sem "direita", a esquerda é espelhada.
           "pontas": { "esquerda": "ponta-esquerda.png", "altura": 1.7, "sobreposicao": 0.3, "deslocamentoY": 0 },

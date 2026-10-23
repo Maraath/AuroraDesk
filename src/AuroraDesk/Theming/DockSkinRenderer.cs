@@ -204,6 +204,26 @@ internal sealed class DockSkinRenderer
         Draw(dc, Skin.Slot, frame);
     }
 
+    public bool HasCells => Image(Skin.SlotCell) is not null;
+
+    /// <summary>Célula de largura <paramref name="pitch"/> centrada no ícone, na proporção da imagem.</summary>
+    public void DrawCell(DrawingContext dc, Point center, double pitch)
+    {
+        if (Image(Skin.SlotCell) is not { } b) return;
+        double h = pitch * b.PixelHeight / b.PixelWidth;
+        dc.DrawImage(b, new Rect(center.X - pitch / 2, center.Y - h / 2, pitch, h));
+    }
+
+    /// <summary>Divisor no lugar de um separador, com a altura de uma célula.</summary>
+    public void DrawDivider(DrawingContext dc, Point center, double cellPitch)
+    {
+        if (Image(Skin.Divider) is not { } d) return;
+        var cell = Image(Skin.SlotCell);
+        double h = cell is not null ? cellPitch * cell.PixelHeight / cell.PixelWidth : cellPitch;
+        double w = h * d.PixelWidth / d.PixelHeight;
+        dc.DrawImage(d, new Rect(center.X - w / 2, center.Y - h / 2, w, h));
+    }
+
     public bool HasCaps => Image(Skin.Caps?.Left) is not null;
 
     /// <summary>Quanto cada ponta passa para fora do painel (para a janela abrir espaço).</summary>

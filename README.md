@@ -224,7 +224,7 @@ Além dos temas de cores, o dock e as ilhas aceitam **skins feitas de imagens PN
 - Cada skin é uma pasta em `%APPDATA%\AuroraDesk\skins-dock\<nome>` com um `skin.json` e as imagens. "Criar skin nova…" cria a pasta com o modelo comentado.
 - Peças, todas opcionais (a que faltar continua desenhada pelo tema):
   - `painel`: moldura das ilhas e do dock, cortada em 9 partes. Os cantos não esticam e o meio se repete sem esticar.
-  - `encaixe`: borda e fundo de cada ícone, como os botões de uma barra de ações.
+  - `encaixe`: borda e fundo de cada ícone, como os botões de uma barra de ações. Com `celula`, o dock vira uma barra dividida (uma célula por ícone, emendadas), e `divisor` entra no lugar dos separadores.
   - `pontas`: esculturas nas pontas da ilha central (ex.: grifos). Sem a direita, a esquerda é espelhada.
   - `quadro`: na ilha esquerda, retrato redondo com barras de CPU (vida) e RAM (mana).
   - `medalhao`: aro do relógio. `botaoRedondo`: fundo dos ícones da bandeja.

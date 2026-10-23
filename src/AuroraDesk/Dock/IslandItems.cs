@@ -72,7 +72,7 @@ internal abstract class IslandItem
     protected Measure? M(int i) => i < Measures.Count ? Measures[i] : null;
 
     /// <summary>Diâmetro do fundo redondo da skin atrás de ícones (0 sem skin).</summary>
-    protected static double RoundButtonSize(IslandContext ctx) => ctx.Skin?.Image(ctx.Skin.Skin.RoundButton) is not null ? 32 : 0;
+    protected static double RoundButtonSize(IslandContext ctx) => ctx.Skin?.Image(ctx.Skin.Skin.RoundButton) is not null ? Math.Min(32, Math.Round(ctx.ContentHeight * 0.72)) : 0;
 
     protected static MeasureSpec Spec(string type, params (string, string)[] options) =>
         new(type, options.ToDictionary(o => o.Item1, o => o.Item2));
@@ -211,7 +211,7 @@ internal sealed class ClockItem(Action click) : IslandItem("relogio")
     public override string? Tooltip => M(0) is ClockMeasure c ? DateFormatter.Format(c.Time, "dddd, d 'de' MMMM 'de' yyyy", Strings.Language) : null;
 
     /// <summary>Diâmetro do medalhão da skin (o relógio fica dentro dele), ou 0 sem medalhão.</summary>
-    private static double Medallion(IslandContext ctx) => ctx.Skin?.Image(ctx.Skin.Skin.Medallion) is not null ? 62 : 0;
+    private static double Medallion(IslandContext ctx) => ctx.Skin?.Image(ctx.Skin.Skin.Medallion) is not null ? Math.Min(62, ctx.ContentHeight + 10) : 0;
 
     public override double Width(IslandContext ctx) =>
         Math.Ceiling(Math.Max(Medallion(ctx), Math.Max(ctx.Text(M(0)?.Text ?? "00:00", 13, ctx.TextColor, medium: true).Width, ctx.Text(M(1)?.Text ?? "qua, 21 out", 11, ctx.SecondaryColor).Width)));
@@ -249,12 +249,14 @@ internal sealed class AuroraItem(Action click) : IslandItem("aurora")
     public override bool Clickable => true;
     public override string? Tooltip => "Aurora Desk";
 
-    public override double Width(IslandContext ctx) => 16;
+    public override double Width(IslandContext ctx) => Math.Max(16, RoundButtonSize(ctx));
 
     public override void Draw(DrawingContext dc, IslandContext ctx, Rect area)
     {
         _icon ??= LoadIcon();
-        var r = new Rect(area.X, area.Y + (area.Height - 16) / 2, 16, 16);
+        double cx = area.X + area.Width / 2, cy = area.Y + area.Height / 2;
+        ctx.DrawRoundButton(dc, new Point(cx, cy), RoundButtonSize(ctx));
+        var r = new Rect(cx - 8, cy - 8, 16, 16);
         if (_icon is not null) dc.DrawImage(_icon, r);
         else dc.DrawEllipse(ctx.Themes.Brush(ctx.Theme.Accent), null, new Point(r.X + 8, r.Y + 8), 7, 7);
     }
@@ -299,11 +301,9 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action cli
     {
         var f = ctx.Skin?.Skin.UnitFrame;
         if (f is not { HasFullFrame: true } || ctx.Skin!.Image(f.Full) is not { } img) return null;
-        // Maior que a ilha, como o quadro do jogador num jogo: as barras ficam legíveis.
-        return (img, (ctx.ContentHeight + 12) * 1.45);
+        // Dentro da ilha: a altura do painel, menos um respiro.
+        return (img, ctx.ContentHeight + 10);
     }
-
-    public override double Height(IslandContext ctx) => Full(ctx)?.Height ?? 0;
 
     public override double Width(IslandContext ctx) =>
         Full(ctx) is { } full ? Math.Ceiling(full.Height * full.Image.PixelWidth / full.Image.PixelHeight) : PortraitSize + 8 + BarWidth;
@@ -341,8 +341,7 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action cli
     {
         var f = ctx.Skin!.Skin.UnitFrame!;
         double k = height / img.PixelHeight;
-        // Pé do quadro rente ao pé da ilha; o que sobra cresce para cima.
-        var box = new Rect(area.X, Math.Min(area.Y + (area.Height - height) / 2, area.Bottom + 6 - height), img.PixelWidth * k, height);
+        var box = new Rect(area.X, area.Y + (area.Height - height) / 2, img.PixelWidth * k, height);
         Rect Map(SkinRect r) => new(box.X + r.X * k, box.Y + r.Y * k, r.Width * k, r.Height * k);
 
         var portrait = Map(f.PortraitArea!.Value);
@@ -352,18 +351,22 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action cli
         else if (AuroraItem.Icon is { } icon) dc.DrawImage(icon, new Rect(portrait.X + portrait.Width * 0.18, portrait.Y + portrait.Height * 0.18, portrait.Width * 0.64, portrait.Height * 0.64));
         dc.Pop();
 
-        FullBar(dc, ctx, Map(f.CpuArea!.Value), M(0), f.CpuBar, new ArgbColor(255, 0, 0xC8, 0), "CPU");
-        FullBar(dc, ctx, Map(f.RamArea!.Value), M(1), f.RamBar, new ArgbColor(255, 0, 0x30, 0xE0), "RAM");
+        var cpuArea = Map(f.CpuArea!.Value);
+        // Barras baixas demais para texto (o quadro cabe na ilha): os valores vão para a placa do nome.
+        bool textInBars = cpuArea.Height >= 10;
+        FullBar(dc, ctx, cpuArea, M(0), f.CpuBar, new ArgbColor(255, 0, 0xC8, 0), textInBars ? "CPU" : null);
+        FullBar(dc, ctx, Map(f.RamArea!.Value), M(1), f.RamBar, new ArgbColor(255, 0, 0x30, 0xE0), textInBars ? "RAM" : null);
         if (f.NameArea is { } na)
         {
             var nr = Map(na);
-            dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(150, 0, 0, 0)), null, nr);
-            Outlined(dc, ctx, f.NameText ?? "Aurora", Math.Min(12, nr.Height * 0.8), ctx.TextColor, nr);
+            dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(170, 0, 0, 0)), null, nr);
+            string label = textInBars ? f.NameText ?? "Aurora" : $"CPU {M(0)?.Value ?? 0:0}%  ·  RAM {M(1)?.Value ?? 0:0}%";
+            Outlined(dc, ctx, label, Math.Clamp(nr.Height * 0.78, 9, 12), ctx.TextColor, nr);
         }
         dc.DrawImage(img, box);
     }
 
-    private static void FullBar(DrawingContext dc, IslandContext ctx, Rect r, Measure? m, SkinImage? fill, ArgbColor fallback, string label)
+    private static void FullBar(DrawingContext dc, IslandContext ctx, Rect r, Measure? m, SkinImage? fill, ArgbColor fallback, string? label)
     {
         dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(200, 0, 0, 0)), null, r);
         double frac = Math.Clamp(m?.Fraction ?? 0, 0, 1);
@@ -374,7 +377,7 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action cli
             else dc.DrawRectangle(ctx.Themes.Brush(fallback), null, r);
             dc.Pop();
         }
-        Outlined(dc, ctx, $"{label} {m?.Value ?? 0:0}%", Math.Min(11, r.Height * 0.95), new ArgbColor(255, 0xFF, 0xFF, 0xFF), r);
+        if (label is not null) Outlined(dc, ctx, $"{label} {m?.Value ?? 0:0}%", Math.Min(11, r.Height * 0.95), new ArgbColor(255, 0xFF, 0xFF, 0xFF), r);
     }
 
     /// <summary>Texto centrado com contorno escuro (legível em cima de qualquer barra).</summary>

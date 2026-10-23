@@ -185,10 +185,25 @@ internal sealed class DockSurface : FrameworkElement
         var accent = _themes.Brush(theme.Accent);
         var dot = _themes.Brush(theme.TextSecondary);
 
+        // Barra dividida (skin): uma célula por ícone, emendadas, e o divisor no lugar dos
+        // separadores. Antes dos ícones, para a moldura de um ícone não ficar sob a célula vizinha.
+        if (Skin?.HasCells == true && Horizontal)
+        {
+            double basePitch = IconSize + Spacing;
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                var slot = slots[i];
+                var c = Pt(start + slot.Center, iconEdge + (_entries[i].IsSeparator ? IconSize : slot.Size) / 2);
+                if (_entries[i].IsSeparator) Skin.DrawDivider(dc, c, basePitch);
+                else Skin.DrawCell(dc, c, slot.Size + Spacing);
+            }
+        }
+
         for (int i = 0; i < _entries.Count; i++)
         {
             var e = _entries[i];
             var slot = slots[i];
+            if (e.IsSeparator && Skin?.HasCells == true && Skin.Skin.Divider is not null && Horizontal) continue;
             if (e.IsSeparator)
             {
                 var a = Pt(start + slot.Center, iconEdge + IconSize * 0.2);
