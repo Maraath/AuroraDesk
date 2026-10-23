@@ -8,7 +8,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Deterministic>true</Deterministic>
     <Authors>Aurora Desk</Authors>
-    <Version>0.1.6</Version>
+    <Version>0.1.7</Version>
 
     <!-- Leveza do runtime -->
     <InvariantGlobalization>true</InvariantGlobalization>

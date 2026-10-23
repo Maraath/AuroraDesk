@@ -59,6 +59,7 @@ internal sealed partial class DockManager : IDisposable
         _host.Themes.Changed += OnThemeChanged;
         _host.Control.Message += OnControlMessage;
         if (_host.State is { } state) state.Changed += OnStateChanged;
+        WindowEvents.ForegroundChanged += OnForegroundChanged;
         if (Config.Enabled) Show();
     }
 
@@ -136,7 +137,13 @@ internal sealed partial class DockManager : IDisposable
     {
         if (_window is null) return;
         // Em jogos e vídeos em tela cheia o dock sai do caminho.
-        if (_fullscreen && _window.IsVisible) { _window.Hide(); SetIslandsVisible(false); }
+        if (_fullscreen && _window.IsVisible)
+        {
+            _window.AllowHide = true;
+            _window.Hide();
+            _window.AllowHide = false;
+            SetIslandsVisible(false);
+        }
         else if (!_fullscreen && !_window.IsVisible) { _window.Show(); Place(); SetIslandsVisible(true); }
     }
 
@@ -749,9 +756,58 @@ internal sealed partial class DockManager : IDisposable
         yield return new DockItem { Kind = "app", Path = "windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel", Name = "Configurações" };
     }
 
+    private static bool IsDesktopWindow(nint hwnd) => hwnd != 0 && Win32.ClassName(hwnd) is "WorkerW" or "Progman";
+
+    private DispatcherTimer? _desktopSettleTimer;
+    private int _desktopSettle;
+
+    private void OnForegroundChanged(nint hwnd)
+    {
+        if (IsDesktopWindow(hwnd))
+        {
+            // O usuário apertou Win+D ou clicou na área de trabalho:
+            // a barra do Aurora Desk e suas ilhas aparecem sobre a área de trabalho.
+            EnsureVisibleOnTop();
+            _desktopSettle = 3;
+            _desktopSettleTimer?.Stop();
+            _desktopSettleTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(150), DispatcherPriority.Normal, (_, _) =>
+            {
+                EnsureVisibleOnTop();
+                if (--_desktopSettle <= 0) _desktopSettleTimer?.Stop();
+            }, _host.Dispatcher);
+            _desktopSettleTimer.Start();
+        }
+    }
+
+    /// <summary>
+    /// Garante que o dock e as ilhas estejam restaurados, visíveis e no topo (especialmente após Win+D).
+    /// </summary>
+    public void EnsureVisibleOnTop()
+    {
+        if (_window is null || _fullscreen) return;
+        if (!_window.IsVisible) _window.Show();
+        _window.BringToTop();
+
+        foreach (var w in new[] { _leftIsland, _rightIsland, _frameIsland })
+        {
+            if (w is null) continue;
+            if (!w.IsVisible) w.Show();
+            w.BringToTop();
+        }
+
+        if (AutoHideActive)
+        {
+            _window.Surface.SetHidden(false);
+            _hideTimer.Stop();
+            _hideTimer.Start();
+        }
+    }
+
     public void Dispose()
     {
         _hideTimer.Stop();
+        _desktopSettleTimer?.Stop();
+        WindowEvents.ForegroundChanged -= OnForegroundChanged;
         _host.Themes.Changed -= OnThemeChanged;
         _host.Control.Message -= OnControlMessage;
         Close();

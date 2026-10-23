@@ -47,6 +47,27 @@ internal sealed unsafe class DockWindow : Window
     public event Action<bool>? FullscreenChanged;
     public event Action? AppBarPositionChanged;
 
+    /// <summary>Permite ocultar a janela explicitamente pelo app (ex.: em tela cheia).</summary>
+    public bool AllowHide { get; set; }
+
+    /// <summary>Restaura e mantém a janela no topo (visível mesmo após Win+D).</summary>
+    public void BringToTop()
+    {
+        if (_hwnd == 0) return;
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, 0, 0, 0, 0, Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE | Win32.SWP_SHOWWINDOW);
+    }
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        base.OnStateChanged(e);
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+            BringToTop();
+        }
+    }
+
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
@@ -147,12 +168,28 @@ internal sealed unsafe class DockWindow : Window
         Log.Info("Espaço reservado do dock devolvido");
     }
 
-    private nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
+    private unsafe nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
     {
         if (msg == Win32.WM_MOUSEACTIVATE)
         {
             handled = true;
             return Win32.MA_NOACTIVATE;
+        }
+        if (msg == Win32.WM_SYSCOMMAND && ((int)wParam & 0xFFF0) == Win32.SC_MINIMIZE)
+        {
+            handled = true;
+            return 0;
+        }
+        if (msg == Win32.WM_WINDOWPOSCHANGING && lParam != 0)
+        {
+            var pos = (Win32.WINDOWPOS*)lParam;
+            if ((pos->flags & Win32.SWP_NOZORDER) == 0 && pos->hwndInsertAfter == Win32.HWND_BOTTOM)
+                pos->hwndInsertAfter = Win32.HWND_TOPMOST;
+            if (!AllowHide && (pos->flags & Win32.SWP_HIDEWINDOW) != 0)
+            {
+                pos->flags &= ~Win32.SWP_HIDEWINDOW;
+                pos->flags |= Win32.SWP_SHOWWINDOW;
+            }
         }
         if (msg == AppBarMessage)
         {

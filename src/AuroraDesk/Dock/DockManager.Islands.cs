@@ -92,7 +92,12 @@ internal sealed partial class DockManager
         {
             if (w is null) continue;
             if (visible && !w.IsVisible) { w.Show(); PlaceIslands(); }
-            else if (!visible && w.IsVisible) w.Hide();
+            else if (!visible && w.IsVisible)
+            {
+                w.AllowHide = true;
+                w.Hide();
+                w.AllowHide = false;
+            }
         }
     }
 

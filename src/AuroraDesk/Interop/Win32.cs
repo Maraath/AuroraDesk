@@ -17,6 +17,8 @@ internal static unsafe partial class Win32
     public const int WM_POWERBROADCAST = 0x0218;
     public const int WM_WINDOWPOSCHANGING = 0x0046;
     public const int WM_MOUSEACTIVATE = 0x0021;
+    public const int WM_SYSCOMMAND = 0x0112;
+    public const int SC_MINIMIZE = 0xF020;
     public const int WM_THEMECHANGED = 0x031A;
     public const int WM_DWMCOLORIZATIONCOLORCHANGED = 0x0320;
     public const int WM_APP = 0x8000;
@@ -44,6 +46,7 @@ internal static unsafe partial class Win32
     public const uint SWP_NOACTIVATE = 0x0010;
     public const uint SWP_FRAMECHANGED = 0x0020;
     public const uint SWP_SHOWWINDOW = 0x0040;
+    public const uint SWP_HIDEWINDOW = 0x0080;
     public const uint SWP_NOOWNERZORDER = 0x0200;
 
     [StructLayout(LayoutKind.Sequential)]

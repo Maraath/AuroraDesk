@@ -37,19 +37,61 @@ internal sealed class IslandWindow : Window
     public IslandSurface Surface => _surface;
     public nint Handle => _hwnd;
 
+    /// <summary>Permite ocultar a janela explicitamente pelo app (ex.: em tela cheia).</summary>
+    public bool AllowHide { get; set; }
+
+    /// <summary>Restaura e mantém a janela no topo (visível mesmo após Win+D).</summary>
+    public void BringToTop()
+    {
+        if (_hwnd == 0) return;
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Win32.SetWindowPos(_hwnd, Win32.HWND_TOPMOST, 0, 0, 0, 0, Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE | Win32.SWP_SHOWWINDOW);
+    }
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        base.OnStateChanged(e);
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+            BringToTop();
+        }
+    }
+
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
         _hwnd = new WindowInteropHelper(this).Handle;
         nint ex = Win32.GetWindowLongPtr(_hwnd, Win32.GWL_EXSTYLE);
         Win32.SetWindowLongPtr(_hwnd, Win32.GWL_EXSTYLE, ex | Win32.WS_EX_TOOLWINDOW | Win32.WS_EX_NOACTIVATE);
-        HwndSource.FromHwnd(_hwnd)!.AddHook((nint h, int msg, nint w, nint l, ref bool handled) =>
+        HwndSource.FromHwnd(_hwnd)!.AddHook(WndProc);
+        RenderModes.Apply(this);
+    }
+
+    private unsafe nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
+    {
+        if (msg == Win32.WM_MOUSEACTIVATE)
         {
-            if (msg != Win32.WM_MOUSEACTIVATE) return 0;
             handled = true;
             return Win32.MA_NOACTIVATE;
-        });
-        RenderModes.Apply(this);
+        }
+        if (msg == Win32.WM_SYSCOMMAND && ((int)wParam & 0xFFF0) == Win32.SC_MINIMIZE)
+        {
+            handled = true;
+            return 0;
+        }
+        if (msg == Win32.WM_WINDOWPOSCHANGING && lParam != 0)
+        {
+            var pos = (Win32.WINDOWPOS*)lParam;
+            if ((pos->flags & Win32.SWP_NOZORDER) == 0 && pos->hwndInsertAfter == Win32.HWND_BOTTOM)
+                pos->hwndInsertAfter = Win32.HWND_TOPMOST;
+            if (!AllowHide && (pos->flags & Win32.SWP_HIDEWINDOW) != 0)
+            {
+                pos->flags &= ~Win32.SWP_HIDEWINDOW;
+                pos->flags |= Win32.SWP_SHOWWINDOW;
+            }
+        }
+        return 0;
     }
 
     /// <summary>Posiciona em pixels físicos (o dock calcula pelo monitor e pela reserva de espaço).</summary>
