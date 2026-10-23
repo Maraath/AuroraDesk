@@ -10,8 +10,10 @@ using AuroraDesk.Theming;
 namespace AuroraDesk.Dock;
 
 /// <summary>Tudo que um item de ilha precisa para se medir e se desenhar.</summary>
-internal sealed class IslandContext(ThemeService themes, double pixelsPerDip, DockSkinRenderer? skin = null)
+internal sealed class IslandContext(ThemeService themes, double pixelsPerDip, DockSkinRenderer? skin = null, double contentHeight = 53)
 {
+    /// <summary>Altura da área dos itens dentro do painel (DIPs).</summary>
+    public double ContentHeight { get; } = contentHeight;
     public static readonly FontFamily Glyphs = new("Segoe Fluent Icons, Segoe MDL2 Assets");
 
     public ThemeService Themes { get; } = themes;
@@ -59,6 +61,9 @@ internal abstract class IslandItem
     public virtual string? Tooltip => null;
 
     public abstract double Width(IslandContext ctx);
+
+    /// <summary>Altura que o item quer (DIPs); 0 = cabe no painel. Maior que o painel, a ilha cresce para cima.</summary>
+    public virtual double Height(IslandContext ctx) => 0;
     public abstract void Draw(DrawingContext dc, IslandContext ctx, Rect area);
 
     public virtual void Click() { }
@@ -289,10 +294,23 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action cli
 
     private static double PortraitSize => 54;
 
-    public override double Width(IslandContext ctx) => PortraitSize + 8 + BarWidth;
+    /// <summary>Quadro inteiro numa imagem (como o de um jogo): altura de desenho e a imagem.</summary>
+    private static (BitmapSource Image, double Height)? Full(IslandContext ctx)
+    {
+        var f = ctx.Skin?.Skin.UnitFrame;
+        if (f is not { HasFullFrame: true } || ctx.Skin!.Image(f.Full) is not { } img) return null;
+        // Maior que a ilha, como o quadro do jogador num jogo: as barras ficam legíveis.
+        return (img, (ctx.ContentHeight + 12) * 1.45);
+    }
+
+    public override double Height(IslandContext ctx) => Full(ctx)?.Height ?? 0;
+
+    public override double Width(IslandContext ctx) =>
+        Full(ctx) is { } full ? Math.Ceiling(full.Height * full.Image.PixelWidth / full.Image.PixelHeight) : PortraitSize + 8 + BarWidth;
 
     public override void Draw(DrawingContext dc, IslandContext ctx, Rect area)
     {
+        if (Full(ctx) is { } full) { DrawFull(dc, ctx, area, full.Image, full.Height); return; }
         var skin = ctx.Skin;
         var frame = skin?.Skin.UnitFrame;
         double d = PortraitSize, cy = area.Y + area.Height / 2;
@@ -313,6 +331,60 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action cli
         double top = cy - (2 * BarHeight + BarGap) / 2;
         Bar(dc, ctx, new Rect(x, top, BarWidth, BarHeight), M(0), frame?.CpuBar, new ArgbColor(255, 0x1E, 0xA8, 0x36), "CPU");
         Bar(dc, ctx, new Rect(x, top + BarHeight + BarGap, BarWidth, BarHeight), M(1), frame?.RamBar, new ArgbColor(255, 0x2A, 0x63, 0xD6), "RAM");
+    }
+
+    /// <summary>
+    /// Quadro inteiro: retrato e barras por baixo, nos lugares que as áreas indicam, e a moldura
+    /// por cima (os furos dela são transparentes), como o quadro do jogador num jogo.
+    /// </summary>
+    private void DrawFull(DrawingContext dc, IslandContext ctx, Rect area, BitmapSource img, double height)
+    {
+        var f = ctx.Skin!.Skin.UnitFrame!;
+        double k = height / img.PixelHeight;
+        // Pé do quadro rente ao pé da ilha; o que sobra cresce para cima.
+        var box = new Rect(area.X, Math.Min(area.Y + (area.Height - height) / 2, area.Bottom + 6 - height), img.PixelWidth * k, height);
+        Rect Map(SkinRect r) => new(box.X + r.X * k, box.Y + r.Y * k, r.Width * k, r.Height * k);
+
+        var portrait = Map(f.PortraitArea!.Value);
+        dc.PushClip(new EllipseGeometry(portrait));
+        dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(255, 0x12, 0x0E, 0x0A)), null, portrait);
+        if (ctx.Skin.Image(f.Portrait) is { } face) dc.DrawImage(face, portrait);
+        else if (AuroraItem.Icon is { } icon) dc.DrawImage(icon, new Rect(portrait.X + portrait.Width * 0.18, portrait.Y + portrait.Height * 0.18, portrait.Width * 0.64, portrait.Height * 0.64));
+        dc.Pop();
+
+        FullBar(dc, ctx, Map(f.CpuArea!.Value), M(0), f.CpuBar, new ArgbColor(255, 0, 0xC8, 0), "CPU");
+        FullBar(dc, ctx, Map(f.RamArea!.Value), M(1), f.RamBar, new ArgbColor(255, 0, 0x30, 0xE0), "RAM");
+        if (f.NameArea is { } na)
+        {
+            var nr = Map(na);
+            dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(150, 0, 0, 0)), null, nr);
+            Outlined(dc, ctx, f.NameText ?? "Aurora", Math.Min(12, nr.Height * 0.8), ctx.TextColor, nr);
+        }
+        dc.DrawImage(img, box);
+    }
+
+    private static void FullBar(DrawingContext dc, IslandContext ctx, Rect r, Measure? m, SkinImage? fill, ArgbColor fallback, string label)
+    {
+        dc.DrawRectangle(ctx.Themes.Brush(new ArgbColor(200, 0, 0, 0)), null, r);
+        double frac = Math.Clamp(m?.Fraction ?? 0, 0, 1);
+        if (frac > 0)
+        {
+            dc.PushClip(new RectangleGeometry(new Rect(r.X, r.Y, r.Width * frac, r.Height)));
+            if (ctx.Skin?.Image(fill) is not null) ctx.Skin.Draw(dc, fill, r);
+            else dc.DrawRectangle(ctx.Themes.Brush(fallback), null, r);
+            dc.Pop();
+        }
+        Outlined(dc, ctx, $"{label} {m?.Value ?? 0:0}%", Math.Min(11, r.Height * 0.95), new ArgbColor(255, 0xFF, 0xFF, 0xFF), r);
+    }
+
+    /// <summary>Texto centrado com contorno escuro (legível em cima de qualquer barra).</summary>
+    private static void Outlined(DrawingContext dc, IslandContext ctx, string s, double size, ArgbColor color, Rect r)
+    {
+        var text = ctx.Text(s, size, color, medium: true);
+        var shadow = ctx.Text(s, size, new ArgbColor(230, 0, 0, 0), medium: true);
+        var at = new Point(r.X + (r.Width - text.Width) / 2, r.Y + (r.Height - text.Height) / 2);
+        foreach (var (ox, oy) in new[] { (-1.0, 0.0), (1.0, 0.0), (0.0, -1.0), (0.0, 1.0) }) dc.DrawText(shadow, new Point(at.X + ox, at.Y + oy));
+        dc.DrawText(text, at);
     }
 
     private static void Bar(DrawingContext dc, IslandContext ctx, Rect r, Measure? m, SkinImage? fill, ArgbColor fallback, string label)

@@ -52,6 +52,23 @@ public sealed class DockSkinTests : IDisposable
     }
 
     [Fact]
+    public void QuadroInteiroComAreas()
+    {
+        string dir = Skin("Q", """
+            { "quadro": { "imagem": "quadro.png", "areaRetrato": [4, 2, 60, 60], "areaNome": [70, 3, 116, 17],
+                          "areaCpu": [70, 22, 116, 10], "areaRam": [70, 34, 116, 10], "nome": "Thrall", "barraCpu": "verde.png" } }
+            """, "quadro.png", "verde.png");
+        var q = DockSkinStore.Load(dir, []).UnitFrame!;
+        Assert.True(q.HasFullFrame);
+        Assert.Equal(new SkinRect(4, 2, 60, 60), q.PortraitArea);
+        Assert.Equal(new SkinRect(70, 34, 116, 10), q.RamArea);
+        Assert.Equal("Thrall", q.NameText);
+
+        string sem = Skin("Q2", """{ "quadro": { "imagem": "q.png", "areaRetrato": [1, 2, 0, 4] } }""", "q.png");
+        Assert.False(DockSkinStore.Load(sem, []).UnitFrame!.HasFullFrame); // área inválida e barras sem área
+    }
+
+    [Fact]
     public void ImagemQueNaoExisteViraAvisoEAPecaFicaDeFora()
     {
         string dir = Skin("X", """{ "painel": "nao-tem.png", "medalhao": "m.png" }""", "m.png");

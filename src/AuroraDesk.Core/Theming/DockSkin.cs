@@ -19,8 +19,26 @@ public sealed record SkinCaps(SkinImage? Left, SkinImage? Right, double Height, 
     public bool MirrorRight => Right is null;
 }
 
-/// <summary>Quadro do jogador na ilha esquerda: retrato redondo e barras de CPU (vida) e RAM (mana).</summary>
-public sealed record SkinUnitFrame(SkinImage? Frame, SkinImage? Portrait, SkinImage? BarBackground, SkinImage? CpuBar, SkinImage? RamBar);
+/// <summary>Retângulo em pixels de uma imagem da skin.</summary>
+public readonly record struct SkinRect(double X, double Y, double Width, double Height);
+
+/// <summary>
+/// Quadro do jogador na ilha esquerda: retrato redondo e barras de CPU (vida) e RAM (mana).
+/// Com <see cref="Full"/>, uma imagem só traz a moldura inteira (como o quadro de um jogo) e as
+/// áreas dizem onde ficam o retrato, o nome e as barras dentro dela.
+/// </summary>
+public sealed record SkinUnitFrame(SkinImage? Frame, SkinImage? Portrait, SkinImage? BarBackground, SkinImage? CpuBar, SkinImage? RamBar)
+{
+    public SkinImage? Full { get; init; }
+    public SkinRect? PortraitArea { get; init; }
+    public SkinRect? NameArea { get; init; }
+    public SkinRect? CpuArea { get; init; }
+    public SkinRect? RamArea { get; init; }
+    /// <summary>Texto da área do nome (padrão: "Aurora").</summary>
+    public string? NameText { get; init; }
+
+    public bool HasFullFrame => Full is not null && PortraitArea is not null && CpuArea is not null && RamArea is not null;
+}
 
 /// <summary>
 /// Skin das ilhas e do dock feita de imagens (como a interface de um jogo): uma pasta com PNGs e
@@ -65,7 +83,7 @@ public sealed class DockSkin
     public IEnumerable<SkinImage> Images() => new[]
     {
         Panel, PanelLeft, PanelCenter, PanelRight, Slot, SlotBackground, Caps?.Left, Caps?.Right,
-        UnitFrame?.Frame, UnitFrame?.Portrait, UnitFrame?.BarBackground, UnitFrame?.CpuBar, UnitFrame?.RamBar, Medallion, RoundButton,
+        UnitFrame?.Frame, UnitFrame?.Portrait, UnitFrame?.BarBackground, UnitFrame?.CpuBar, UnitFrame?.RamBar, UnitFrame?.Full, Medallion, RoundButton,
     }.OfType<SkinImage>();
 }
 
@@ -117,7 +135,15 @@ public static class DockSkinStore
 
         SkinUnitFrame? unit = null;
         if (frame.ValueKind == JsonValueKind.Object)
-            unit = new SkinUnitFrame(Img(frame, "moldura"), Img(frame, "retrato"), Img(frame, "fundoBarra"), Img(frame, "barraCpu"), Img(frame, "barraRam"));
+            unit = new SkinUnitFrame(Img(frame, "moldura"), Img(frame, "retrato"), Img(frame, "fundoBarra"), Img(frame, "barraCpu"), Img(frame, "barraRam"))
+            {
+                Full = Img(frame, "imagem"),
+                PortraitArea = Area(frame, "areaRetrato"),
+                NameArea = Area(frame, "areaNome"),
+                CpuArea = Area(frame, "areaCpu"),
+                RamArea = Area(frame, "areaRam"),
+                NameText = Str(frame, "nome"),
+            };
 
         return new DockSkin
         {
@@ -150,6 +176,14 @@ public static class DockSkinStore
     private static ArgbColor? Color(JsonElement e, string key) =>
         Str(e, key) is { } s && ArgbColor.TryParse(s, out var c) ? c : null;
 
+    /// <summary>Área [x, y, largura, altura] em pixels da imagem.</summary>
+    private static SkinRect? Area(JsonElement e, string key)
+    {
+        if (!e.TryGetProperty(key, out var v) || v.ValueKind != JsonValueKind.Array) return null;
+        var n = v.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Number).Select(x => x.GetDouble()).ToArray();
+        return n.Length == 4 && n[2] > 0 && n[3] > 0 ? new SkinRect(n[0], n[1], n[2], n[3]) : null;
+    }
+
     /// <summary>"margens": 20 (todas), [h, v] ou [esquerda, cima, direita, baixo].</summary>
     private static SliceMargins Margins(JsonElement e)
     {
@@ -179,6 +213,9 @@ public static class DockSkinStore
           // Sem "direita", a esquerda é espelhada.
           "pontas": { "esquerda": "ponta-esquerda.png", "altura": 1.7, "sobreposicao": 0.3, "deslocamentoY": 0 },
           // Quadro do jogador na ilha esquerda: retrato redondo e barras de CPU e RAM.
+          // Com "imagem" (o quadro inteiro, com furos transparentes) e as áreas [x, y, largura, altura]
+          // em pixels dela, o quadro fica maior que a ilha, como num jogo:
+          //   "imagem": "quadro.png", "areaRetrato": [..], "areaNome": [..], "areaCpu": [..], "areaRam": [..], "nome": "Aurora"
           "quadro": { "moldura": "moldura-retrato.png", "retrato": "retrato.png", "fundoBarra": "barra-fundo.png", "barraCpu": "barra-cpu.png", "barraRam": "barra-ram.png" },
           // Aro do relógio e fundo dos ícones da bandeja.
           "medalhao": "medalhao.png",

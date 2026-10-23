@@ -112,7 +112,7 @@ internal sealed class IslandSurface : FrameworkElement
         InvalidateVisual();
     }
 
-    private IslandContext Context() => new(_themes, VisualTreeHelper.GetDpi(this).PixelsPerDip, Skin);
+    private IslandContext Context() => new(_themes, VisualTreeHelper.GetDpi(this).PixelsPerDip, Skin, PanelThickness - 12);
 
     /// <summary>Largura do painel em DIPs com o conteúdo atual.</summary>
     public double RequiredWidth()
@@ -123,7 +123,16 @@ internal sealed class IslandSurface : FrameworkElement
         return Math.Ceiling(2 * Padding + visible.Sum(i => i.Width(ctx)) + Gap * (visible.Count - 1));
     }
 
-    public double RequiredHeight => PanelThickness + EdgeGap;
+    /// <summary>Altura da janela: o painel, ou mais se algum item for maior (ex.: o quadro do jogador da skin).</summary>
+    public double RequiredHeight
+    {
+        get
+        {
+            var ctx = Context();
+            double tallest = _items.Where(i => i.Visible).Select(i => i.Height(ctx)).DefaultIfEmpty(0).Max();
+            return Math.Max(PanelThickness, tallest + 6) + EdgeGap;
+        }
+    }
 
     protected override void OnRender(DrawingContext dc)
     {

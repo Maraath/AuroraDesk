@@ -150,7 +150,9 @@ internal sealed class DockSkinRenderer
         if (_tiles.Count > 96) _tiles.Clear();
         brush = new ImageBrush(part)
         {
-            TileMode = TileMode.Tile,
+            // Espelhada a cada repetição: emenda sem costura mesmo em texturas que não foram feitas
+            // para repetir (ex.: a faixa de pedra de um jogo, mais escura numa ponta).
+            TileMode = TileMode.FlipX,
             Stretch = Stretch.Fill,
             ViewportUnits = BrushMappingMode.Absolute,
             // Absoluto em relação ao elemento: começa no início do destino, para emendar com o canto.
