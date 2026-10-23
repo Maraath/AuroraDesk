@@ -106,8 +106,10 @@ internal sealed class StatItem(string key, string label, MeasureSpec spec, strin
         valueText.MaxTextWidth = Math.Max(1, area.Width);
         valueText.Trimming = TextTrimming.CharacterEllipsis;
         valueText.MaxLineCount = 1;
-        // Sempre reserva o espaço da barrinha: itens com e sem barra ficam com o texto alinhado.
-        double total = labelText.Height + valueText.Height + 6;
+        // Reserva o espaço da barrinha para itens com e sem barra ficarem alinhados. Com o quadro do
+        // jogador da skin não há barrinhas na ilha: o texto fica no centro.
+        bool reserveBar = bar || ctx.Skin?.Skin.UnitFrame is null;
+        double total = labelText.Height + valueText.Height + (reserveBar ? 6 : 0);
         double y = area.Y + (area.Height - total) / 2;
         dc.DrawText(labelText, new Point(area.X, y));
         dc.DrawText(valueText, new Point(area.X, y + labelText.Height - 1));
@@ -211,7 +213,7 @@ internal sealed class ClockItem(Action click) : IslandItem("relogio")
     public override string? Tooltip => M(0) is ClockMeasure c ? DateFormatter.Format(c.Time, "dddd, d 'de' MMMM 'de' yyyy", Strings.Language) : null;
 
     /// <summary>Diâmetro do medalhão da skin (o relógio fica dentro dele), ou 0 sem medalhão.</summary>
-    private static double Medallion(IslandContext ctx) => ctx.Skin?.Image(ctx.Skin.Skin.Medallion) is not null ? Math.Min(62, ctx.ContentHeight + 10) : 0;
+    private static double Medallion(IslandContext ctx) => ctx.Skin?.Image(ctx.Skin.Skin.Medallion) is not null ? Math.Min(62, ctx.ContentHeight + 4) : 0;
 
     public override double Width(IslandContext ctx) =>
         Math.Ceiling(Math.Max(Medallion(ctx), Math.Max(ctx.Text(M(0)?.Text ?? "00:00", 13, ctx.TextColor, medium: true).Width, ctx.Text(M(1)?.Text ?? "qua, 21 out", 11, ctx.SecondaryColor).Width)));
@@ -380,10 +382,15 @@ internal sealed class UnitFrameItem(MeasureSpec cpu, MeasureSpec ram, Action cli
         if (label is not null) Outlined(dc, ctx, $"{label} {m?.Value ?? 0:0}%", Math.Min(11, r.Height * 0.95), new ArgbColor(255, 0xFF, 0xFF, 0xFF), r);
     }
 
-    /// <summary>Texto centrado com contorno escuro (legível em cima de qualquer barra).</summary>
+    /// <summary>Texto centrado com contorno escuro (legível em cima de qualquer barra); diminui até caber na largura.</summary>
     private static void Outlined(DrawingContext dc, IslandContext ctx, string s, double size, ArgbColor color, Rect r)
     {
         var text = ctx.Text(s, size, color, medium: true);
+        while (text.Width > r.Width - 4 && size > 7.5)
+        {
+            size -= 0.5;
+            text = ctx.Text(s, size, color, medium: true);
+        }
         var shadow = ctx.Text(s, size, new ArgbColor(230, 0, 0, 0), medium: true);
         var at = new Point(r.X + (r.Width - text.Width) / 2, r.Y + (r.Height - text.Height) / 2);
         foreach (var (ox, oy) in new[] { (-1.0, 0.0), (1.0, 0.0), (0.0, -1.0), (0.0, 1.0) }) dc.DrawText(shadow, new Point(at.X + ox, at.Y + oy));

@@ -100,6 +100,11 @@ internal sealed class IslandSurface : FrameworkElement
     /// <summary>Skin de imagens (null = desenho do tema).</summary>
     public DockSkinRenderer? Skin { get; set; }
 
+    /// <summary>Distância dos itens até a borda: com skin, por dentro da moldura e com um respiro.</summary>
+    private double InnerPadding => Skin is { } s && s.HasPanel(_alignRight ? 'd' : 'e')
+        ? Math.Max(Padding - 2, s.PanelInset(_alignRight ? 'd' : 'e', PanelThickness) + 9)
+        : Padding;
+
     /// <summary>Espaço entre itens.</summary>
     public double Gap => _alignRight ? 12 : 18;
 
@@ -120,7 +125,7 @@ internal sealed class IslandSurface : FrameworkElement
         var ctx = Context();
         var visible = _items.Where(i => i.Visible).ToList();
         if (visible.Count == 0) return 0;
-        return Math.Ceiling(2 * Padding + visible.Sum(i => i.Width(ctx)) + Gap * (visible.Count - 1));
+        return Math.Ceiling(2 * InnerPadding + visible.Sum(i => i.Width(ctx)) + Gap * (visible.Count - 1));
     }
 
     /// <summary>Altura da janela: o painel, ou mais se algum item for maior (ex.: o quadro do jogador da skin).</summary>
@@ -152,7 +157,7 @@ internal sealed class IslandSurface : FrameworkElement
         else if (!SystemBackdrop)
             dc.DrawRoundedRectangle(_themes.Brush(theme.Panel), _themes.Pen(theme.Border.WithOpacity(0.6), 1), _panel, radius, radius);
 
-        double x = x0 + Padding;
+        double x = x0 + InnerPadding;
         foreach (var item in _items.Where(i => i.Visible))
         {
             double w = item.Width(ctx);

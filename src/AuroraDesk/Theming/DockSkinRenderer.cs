@@ -189,6 +189,15 @@ internal sealed class DockSkinRenderer
     // ---------- peças ----------
 
     public bool HasPanel(char island) => Image(Skin.PanelFor(island)) is not null;
+
+    /// <summary>Largura da moldura nas laterais (DIPs) para um painel desta altura: os itens ficam por dentro.</summary>
+    public double PanelInset(char island, double height)
+    {
+        var img = Skin.PanelFor(island);
+        if (Image(img) is not { } b) return 0;
+        double k = height / b.PixelHeight * _decodeScale.GetValueOrDefault(img!.Path, 1);
+        return Math.Max(img.Margins.Left, img.Margins.Right) * k;
+    }
     public void DrawPanel(DrawingContext dc, char island, Rect r) => DrawNineSlice(dc, Skin.PanelFor(island), r);
 
     public bool HasSlot => Image(Skin.Slot) is not null || Image(Skin.SlotBackground) is not null;
