@@ -101,6 +101,17 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
   - Custo com o app aberto há ~1 min (medido no processo, não com `medir.ps1`, para não abrir o app dentro do pacote do Claude): 69,0 MB de Private Bytes, contra 68,5 MB sem skin, e 0,28% de CPU ociosa em 30 s, com o PC carregado (RAM em 94%).
   - Pontas (grifos): o motor está pronto, mas a skin Pedra não traz imagem. Não testadas com imagem real.
 
+- **Início com o Windows por tarefa agendada** (0.1.8):
+  - Antes, pela chave Run: nos dois boots de 23/10 o dock ficou pronto 26 s e 24 s depois do logon (logon às 12:40:12 e 16:55:08 no log do Winlogon; dock pronto às 12:40:40 e 16:55:32). O app em si levava só 1,7 s; o resto era o atraso que o Windows impõe à chave Run.
+  - Depois: a tarefa `AuroraDesk` (gatilho no logon, prioridade 4 = normal, `--logon`) foi criada pelo instalador em modo silencioso. A entrada da chave Run foi removida do registro real; o Claude desktop vê uma cópia virtual dela, conferida com `reg query` aberto via WMI.
+  - `schtasks /Run /TN AuroraDesk` abriu o app com prioridade normal (8) e o dock pronto em 1312 ms. Uma segunda abertura com `--logon` saiu sem abrir as configurações.
+  - Explorer encerrado à força e o app aberto com `--logon` logo em seguida: o Windows reabriu o Explorer sozinho em ~1 s. A bandeja e a AppBar falharam enquanto ele montava a barra e se recuperaram no `TaskbarCreated` (área de trabalho até y=1015).
+    - Efeito colateral do teste: o Explorer novo subiu com "ocultar automaticamente" (o estado 0 devolvido 3 s antes não tinha sido gravado), e o backup da barra registrou 1 como original. O backup foi corrigido à mão para 0.
+  - Ainda não medido num boot real: o tempo entre o logon e o dock pronto. O log agora registra "N s depois de ligar o PC" nos primeiros 10 minutos.
+  - Consumo com o app aberto há ~1 min (no processo): 69,6 MB de Private Bytes e 0,10% de CPU ociosa em 30 s.
+
+- **Grupos de atalhos mais rápidos** (0.1.8): o painel é reaproveitado entre aberturas, os ícones dos atalhos são carregados com o app ocioso e a memória não é mais esvaziada 3 s depois de fechar o painel. O log registra "Grupo 'X' aberto em N ms". Os tempos ainda não foram medidos com cliques reais.
+
 Não verificado (ou verificado só parcialmente):
 
 - Molduras em janelas novas do Explorer: o Windows deste PC abre pastas como abas da janela existente, então o caminho "janela nova" foi coberto pela reaplicação ao iniciar e ao ganhar o foco, não por uma janela nova de fato.
