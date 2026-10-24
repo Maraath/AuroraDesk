@@ -234,6 +234,24 @@ Além dos temas de cores, o dock e as ilhas aceitam **skins feitas de imagens PN
 - A skin **Pedra** vem com o app: texturas procedurais próprias (`tools\gerar-skin-pedra.ps1`), livres para usar. Ela é atualizada junto com o app; para personalizar, copie a pasta com outro nome.
 - Imagens de jogos e de outros artistas pertencem a quem as criou: use-as só no seu PC.
 
+### Skin "Azeroth" (estilo World of Warcraft)
+
+Dock dividido em células como a barra de ações clássica, grifos nas pontas, quadro do jogador com CPU (vida) e RAM (mana), relógio no aro do minimapa e bandeja nos botões redondos.
+
+As imagens são **texturas da interface do World of Warcraft, arte da Blizzard Entertainment**, e por isso **não vêm com o Aurora Desk** nem ficam neste repositório. O script `tools\gerar-skin-azeroth.ps1` monta a skin **no seu PC**:
+
+1. Instale o Aurora Desk 0.1.6 ou mais novo.
+2. Baixe o script [`tools/gerar-skin-azeroth.ps1`](tools/gerar-skin-azeroth.ps1) e rode no PowerShell:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\gerar-skin-azeroth.ps1 -AplicarAparencia
+   ```
+   - O script baixa 8 texturas do espelho público [Gethe/wow-ui-textures](https://github.com/Gethe/wow-ui-textures), fixado numa versão exata e conferido por SHA-256, para a skin sair igual em qualquer PC. Depois ele monta as peças e instala em `%APPDATA%\AuroraDesk\skins-dock\Azeroth`.
+   - `-AplicarAparencia` (opcional) também deixa o visual igual ao das capturas: skin Azeroth, ícones em 24, tema Mocha e ilha esquerda com CPU, RAM e clima. Antes, ele guarda uma cópia do `config.json` em `backup\`. Seus apps e grupos não mudam.
+   - Sem essa opção, escolha "Azeroth" em Configurações → Dock → Aparência → Skin de imagens.
+3. Para a Horda, troque `ponta-esquerda.png` por `ponta-horda.png` no `skin.json` da skin.
+
+Uso pessoal: não redistribua as imagens geradas.
+
 ## Como criar um tema
 
 Em Configurações → Temas → "Duplicar tema atual", ou crie `%APPDATA%\AuroraDesk\themes\meu-tema.json`:
