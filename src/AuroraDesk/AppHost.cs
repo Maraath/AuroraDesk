@@ -56,7 +56,7 @@ internal sealed class AppHost : IDisposable
         Dock = new DockManager(this);
         var registry = new UserRegistry();
         Backup = new OriginalValues(Path.Combine(Paths.Backup, "windows-original.json"), registry);
-        Startup = new StartupRegistration(Backup, registry);
+        Startup = new StartupRegistration(registry);
         Trimmer = new MemoryTrimmer(Config.Performance, Dispatcher);
         Taskbar = new TaskbarHider(new TaskbarBackup(Program.BackupFile()), Control, Dispatcher);
         Styler = new WindowsStyler(Config, Themes, Backup, Dispatcher);
@@ -122,7 +122,14 @@ internal sealed class AppHost : IDisposable
         var startedAt = Process.GetCurrentProcess().StartTime;
         // Medido quando a fila de interface esvazia, isto é, com tudo já visível.
         Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
-            Log.Info($"Inicialização concluída em {(DateTime.Now - startedAt).TotalMilliseconds:0} ms"));
+        {
+            // Logo depois de ligar o PC, registra também o tempo desde o boot (a meta é aparecer logo após o logon).
+            var uptime = TimeSpan.FromMilliseconds(Environment.TickCount64);
+            Log.Info($"Inicialização concluída em {(DateTime.Now - startedAt).TotalMilliseconds:0} ms" +
+                (uptime < TimeSpan.FromMinutes(10) ? $" ({uptime.TotalSeconds:0} s depois de ligar o PC)" : ""));
+        });
+        // Troca a entrada antiga da chave Run pela tarefa agendada, sem pesar na abertura.
+        Task.Delay(TimeSpan.FromSeconds(30)).ContinueWith(_ => Startup.Migrate(), TaskScheduler.Default);
         // A inicialização deixa páginas que não serão mais usadas (JIT, XAML do sistema...).
         Trimmer.Schedule(TimeSpan.FromSeconds(20));
 
@@ -256,6 +263,8 @@ internal sealed class AppHost : IDisposable
         Styler.ApplyAll();
         try { count += Backup.RestoreAll(); }
         catch (Exception ex) { Log.Error("Falha ao restaurar valores originais", ex); }
+        // Backups antigos podem trazer de volta a entrada da chave Run, que somada à tarefa agendada abriria o app duas vezes.
+        Task.Run(Startup.Migrate);
         if (Config.HideTaskbar || Taskbar.IsActive)
         {
             Config.HideTaskbar = false;

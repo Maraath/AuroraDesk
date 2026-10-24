@@ -59,12 +59,15 @@ Name: "{autoprograms}\Aurora Desk"; Filename: "{app}\AuroraDesk.exe"; Comment: "
 Name: "{autoprograms}\Configurações do Aurora Desk"; Filename: "{app}\AuroraDesk.exe"; Parameters: "--configuracoes"
 Name: "{autodesktop}\Aurora Desk"; Filename: "{app}\AuroraDesk.exe"; Tasks: atalhodesktop
 
-[Registry]
-; Mesmo formato que o app usa (Configurações > Geral > Iniciar com o Windows), para ele reconhecer.
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AuroraDesk"; ValueData: """{app}\AuroraDesk.exe"""; Tasks: iniciar; Flags: uninsdeletevalue
-
 [Run]
+; "Iniciar com o Windows" é uma tarefa agendada no logon, criada pelo próprio app (o mesmo que
+; Configurações > Geral). A chave Run abria o app ~20 s depois do logon; o app também converte a
+; entrada antiga da chave Run de versões anteriores.
+Filename: "{app}\AuroraDesk.exe"; Parameters: "--registrar-inicio"; Tasks: iniciar; Flags: runhidden waituntilterminated
 Filename: "{app}\AuroraDesk.exe"; Description: "Abrir o Aurora Desk agora"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN AuroraDesk /F"; Flags: runhidden waituntilterminated; RunOnceId: "ApagarTarefaDeInicio"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"

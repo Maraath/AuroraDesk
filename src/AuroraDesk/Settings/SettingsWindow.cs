@@ -550,7 +550,7 @@ internal sealed class SettingsWindow : Window
         var page = new StackPanel();
         page.Children.Add(Ui.Header("Geral"));
 
-        bool startup = _host.Startup.IsEnabled;
+        var (startup, startupElsewhere) = _host.Startup.Read();
         page.Children.Add(Ui.Card(
             Ui.Row("Ocultar a barra de tarefas do Windows enquanto o Aurora Desk estiver aberto",
                 Ui.Toggle(Config.HideTaskbar, v => _host.SetHideTaskbar(v)),
@@ -558,7 +558,7 @@ internal sealed class SettingsWindow : Window
             Ui.Note("Os atalhos do Windows continuam funcionando: Win (Iniciar), Win+A (configurações rápidas) e Win+N (notificações e calendário).")));
         page.Children.Add(Ui.Card(
             Ui.Row("Iniciar com o Windows", Ui.Toggle(startup, v => _host.Startup.Set(v)),
-                _host.Startup.PointsElsewhere ? "Atenção: a entrada atual aponta para outro executável; ligar de novo corrige." : "Usa a chave Run do seu usuário; pode ser desligado a qualquer momento."),
+                startupElsewhere ? "Atenção: a entrada atual aponta para outro executável; ligar de novo corrige." : "Usa uma tarefa agendada no seu logon, que abre o app logo ao entrar (a chave Run do Windows atrasa ~20 s). Pode ser desligado a qualquer momento."),
             Ui.Row("Idioma de datas e textos dos widgets", Ui.Combo([("Português (Brasil)", "pt-BR"), ("English", "en")], Config.Language, v =>
             {
                 Config.Language = v;

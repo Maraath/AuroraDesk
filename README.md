@@ -320,7 +320,7 @@ O script mostra Private Bytes, Working Set (total, pico e privado), CPU média o
 
 ## Segurança e privacidade
 
-- Nada exige administrador. O app só mexe no usuário atual: a chave `HKCU\...\Run` (se você ligar "Iniciar com o Windows") e a reserva de espaço do dock (AppBar, devolvida ao sair).
+- Nada exige administrador. O app só mexe no usuário atual: uma tarefa agendada no seu logon chamada `AuroraDesk` (se você ligar "Iniciar com o Windows"; ela abre o app logo ao entrar, sem o atraso de ~20 s que o Windows impõe à chave `Run`) e a reserva de espaço do dock (AppBar, devolvida ao sair).
 - **Restaurar original** devolve os valores do registro guardados em `backup\windows-original.json`, libera o espaço do dock e mostra a barra de tarefas de novo (desligando a opção de ocultá-la).
 - **Barra de tarefas do Windows**: por padrão, fica **oculta enquanto o Aurora Desk estiver aberto** e volta sozinha quando ele fecha. Veja "Barra de tarefas do Windows" abaixo.
 - **Cores do Windows**: só mudam se você ligar "Windows com o tema do Aurora" (Temas). Os valores originais vão para `backup\windows-original.json` e voltam ao fechar o app (opção) ou com Restaurar original. O papel de parede não é alterado.

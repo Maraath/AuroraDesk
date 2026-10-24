@@ -1,7 +1,7 @@
 ﻿<#
 .SYNOPSIS
   Testa o instalador em modo silencioso: instala, abre, atualiza com o app aberto e desinstala,
-  conferindo arquivos, atalhos, registro e a barra de tarefas. Mantém os dados do usuário.
+  conferindo arquivos, atalhos, a tarefa de início, o registro e a barra de tarefas. Mantém os dados do usuário.
 #>
 param([string]$Setup = (Get-ChildItem (Join-Path $PSScriptRoot '..\artifacts\instalador') -Filter 'AuroraDesk-Setup-*.exe' | Sort-Object LastWriteTime | Select-Object -Last 1).FullName)
 
@@ -21,7 +21,9 @@ Start-Process $Setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTA
 Check 'Instalado em %LOCALAPPDATA%\Programs\Aurora Desk' (Test-Path $exe)
 Check 'Runtime embutido (coreclr.dll e wpfgfx)' ((Test-Path (Join-Path $dir 'coreclr.dll')) -and (Get-ChildItem $dir -Filter 'wpfgfx*.dll'))
 Check 'Atalho no menu Iniciar' (Test-Path $atalho)
-Check 'Iniciar com o Windows (chave Run)' ((Get-ItemProperty $run -Name AuroraDesk -ErrorAction SilentlyContinue).AuroraDesk -eq "`"$exe`"")
+function Tarefa { schtasks /Query /TN AuroraDesk /XML ONE 2>$null | Out-String }
+Check 'Iniciar com o Windows (tarefa no logon)' ((Tarefa) -match [regex]::Escape($exe) -and (Tarefa) -match '--logon')
+Check 'Sem a chave Run antiga' (-not (Get-ItemProperty $run -Name AuroraDesk -ErrorAction SilentlyContinue))
 Check 'Aparece em Aplicativos instalados' (Test-Path $uninstKey)
 
 Start-Process $exe; Start-Sleep 7
@@ -41,6 +43,7 @@ Check 'Desinstalação fechou o app' ((AppDoInstalado) -eq 0)
 Check 'Barra do Windows visível depois' (Barra)
 Check 'Arquivos removidos' (-not (Test-Path $exe))
 Check 'Atalho removido' (-not (Test-Path $atalho))
+Check 'Tarefa de início removida' (-not (Tarefa))
 Check 'Chave Run removida' (-not (Get-ItemProperty $run -Name AuroraDesk -ErrorAction SilentlyContinue))
 Check 'Registro de desinstalação removido' (-not (Test-Path $uninstKey))
 Check 'Dados do usuário mantidos (resposta padrão: Não)' (Test-Path (Join-Path $env:APPDATA 'AuroraDesk\config.json'))

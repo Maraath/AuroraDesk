@@ -8,7 +8,8 @@ internal static class Program
     /// <summary>
     /// Ponto de entrada. Garante instância única antes de carregar o WPF.
     /// Argumentos: --sair (fecha a instância aberta), --configuracoes (abre as configurações),
-    /// --vigia &lt;pid&gt; (uso interno: restaura a barra de tarefas se o app cair).
+    /// --logon (aberto com o Windows: espera o Explorer), --registrar-inicio e --remover-inicio
+    /// (instalador), --vigia &lt;pid&gt; (uso interno: restaura a barra de tarefas se o app cair).
     /// </summary>
     [STAThread]
     private static int Main(string[] args)
@@ -18,7 +19,12 @@ internal static class Program
         if (watch >= 0 && watch + 1 < args.Length && int.TryParse(args[watch + 1], out int watched))
             return Infrastructure.TaskbarWatchdog.RunWatchdog(watched, BackupFile());
 
-        bool exit = args.Any(a => a.Equals("--sair", StringComparison.OrdinalIgnoreCase));
+        // Usados pelo instalador: só ligam/desligam "Iniciar com o Windows" e saem.
+        if (Has(args, "--registrar-inicio")) return SetStartup(true);
+        if (Has(args, "--remover-inicio")) return SetStartup(false);
+
+        bool exit = Has(args, "--sair");
+        bool logon = Has(args, Infrastructure.StartupRegistration.LogonArgument);
 
         // --reiniciar <pid>: espera a instância anterior fechar antes de tentar a instância única.
         int restart = Array.FindIndex(args, a => a.Equals("--reiniciar", StringComparison.OrdinalIgnoreCase));
@@ -31,17 +37,27 @@ internal static class Program
         using var mutex = new Mutex(true, @"Local\AuroraDesk.Instancia", out bool created);
         if (!created)
         {
-            ControlWindow.SendToRunningInstance(exit ? ControlWindow.CommandExit : ControlWindow.CommandOpenSettings);
+            // Aberto pelo logon com o app já aberto (ex.: tarefa e chave Run antigas juntas): nada a fazer.
+            if (!logon) ControlWindow.SendToRunningInstance(exit ? ControlWindow.CommandExit : ControlWindow.CommandOpenSettings);
             return 0;
         }
         if (exit) return 0;
 
-        return RunApp(args.Any(a => a.Equals("--configuracoes", StringComparison.OrdinalIgnoreCase)));
+        return RunApp(Has(args, "--configuracoes"), logon);
     }
+
+    private static bool Has(string[] args, string name) => args.Any(a => a.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Separado do Main para o vigia não carregar as DLLs do WPF ao compilar o Main.</summary>
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int RunApp(bool openSettings) => new App(openSettings).Run();
+    private static int RunApp(bool openSettings, bool logon) => new App(openSettings, logon).Run();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int SetStartup(bool enabled)
+    {
+        new Infrastructure.StartupRegistration(new Infrastructure.UserRegistry()).Set(enabled);
+        return 0;
+    }
 
     internal static string BackupFile() => Path.Combine(new Core.Config.AppPaths().Backup, "barra-de-tarefas.json");
 }
