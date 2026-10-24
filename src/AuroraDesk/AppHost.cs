@@ -208,6 +208,7 @@ internal sealed class AppHost : IDisposable
             .Item("Configurações", OpenSettings)
             .Item("Abrir pasta de dados", () => OpenFolder(Paths.Roaming))
             .Separator()
+            .Submenu("Energia", PowerActions.Menu())
             .Item("Sair", Exit);
         menu.Show(Control.Handle, dark: Themes.Current.Dark);
     }

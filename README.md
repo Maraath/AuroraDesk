@@ -118,7 +118,8 @@ O app tem uma instância só. Uma segunda execução abre as configurações da 
     - o **ícone do Aurora Desk** (o mesmo menu da bandeja, que some junto com a barra do Windows);
     - Wi-Fi ou cabo e volume (role o mouse para ajustar);
     - bateria, se houver;
-    - relógio com data.
+    - relógio com data;
+    - **botão de energia**, como no menu Iniciar: bloquear, suspender, hibernar (se estiver ligado nas opções de energia do Windows), reiniciar e desligar. As mesmas opções ficam em "Energia" no menu principal.
 
     Os ícones do sistema abrem as configurações rápidas do Windows (Win+A) e o relógio abre as notificações e o calendário (Win+N). Enquanto esses painéis estão abertos, o Windows mostra a própria barra por baixo; ela some de novo ao fechá-los.
   - Escolha os itens em Configurações → Dock → Três ilhas. As ilhas usam as mesmas medidas dos widgets, lidas uma vez só.

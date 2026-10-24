@@ -209,11 +209,14 @@ internal sealed partial class DockManager
             };
             if (item is not null) _rightItems.Add(item);
         }
+        if (Config.PowerButton) _rightItems.Add(new IconButtonItem("energia", "", "Energia: bloquear, suspender, reiniciar ou desligar", ShowPowerMenu));
         // Win+D: o próprio Windows minimiza tudo e, no clique seguinte, devolve as janelas.
         if (Config.ShowDesktopButton) _rightItems.Add(new ShowDesktopItem(() => Win32.SendWinShortcut('D')));
     }
 
     private static void QuickSettings() => Win32.SendWinShortcut('A');
+
+    private void ShowPowerMenu() => Infrastructure.PowerActions.Menu().Show(_host.Control.Handle, _host.Themes.Current.Dark);
 
     // ---------- grupos de atalhos ----------
 
