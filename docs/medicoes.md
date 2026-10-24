@@ -110,7 +110,9 @@ Testado de verdade nesta máquina, com capturas de tela e UI Automation:
   - Ainda não medido num boot real: o tempo entre o logon e o dock pronto. O log agora registra "N s depois de ligar o PC" nos primeiros 10 minutos.
   - Consumo com o app aberto há ~1 min (no processo): 69,6 MB de Private Bytes e 0,10% de CPU ociosa em 30 s.
 
-- **Grupos de atalhos mais rápidos** (0.1.8): o painel é reaproveitado entre aberturas, os ícones dos atalhos são carregados com o app ocioso e a memória não é mais esvaziada 3 s depois de fechar o painel. O log registra "Grupo 'X' aberto em N ms". Os tempos ainda não foram medidos com cliques reais.
+- **Grupos de atalhos mais rápidos** (0.1.8): o painel é reaproveitado entre aberturas, os ícones dos atalhos são carregados com o app ocioso e a memória não é mais esvaziada 3 s depois de fechar o painel. O log registra "Grupo 'X' aberto em N ms".
+  - Cliques reais do usuário, com a RAM em ~94%: a primeira abertura (que cria o painel) levou 233 ms; as seguintes, de outros grupos, 38 ms e 32 ms. Não há medição da versão anterior para comparar, porque o log de tempo entrou junto com a mudança.
+  - O menu de energia abriu. Nenhuma das opções foi acionada no teste.
 
 Não verificado (ou verificado só parcialmente):
 
