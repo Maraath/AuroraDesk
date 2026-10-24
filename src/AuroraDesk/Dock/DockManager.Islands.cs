@@ -220,39 +220,93 @@ internal sealed partial class DockManager
 
     // ---------- grupos de atalhos ----------
 
+    /// <summary>Painel dos grupos, reaproveitado entre aberturas (ver <see cref="GroupWindow"/>).</summary>
     private GroupWindow? _groupWindow;
-    private Core.Config.DockItem? _openGroup;
+    private int _groupIconPixels;
+    private bool _groupIconsQueued;
 
     /// <summary>Abre (ou fecha, se for o mesmo) o painel do grupo no índice <paramref name="index"/>.</summary>
     internal void ToggleGroup(int index, bool rename = false)
     {
         if (_window is null || index < 0 || index >= _entries.Count || _entries[index].Pinned is not { IsGroup: true } group) return;
-        bool same = ReferenceEquals(_openGroup, group);
-        _groupWindow?.Close();
-        if (same && !rename) return;
+        if (_groupWindow is { IsOpen: true } open && ReferenceEquals(open.Group, group))
+        {
+            if (rename) open.StartRename();
+            else open.HideSoon();
+            return;
+        }
         if (_window.Surface.ItemScreenRect(index) is not { } rect) return;
 
-        int px = IconPixels();
-        var w = new GroupWindow(_host.Themes, group, item =>
+        var watch = Stopwatch.StartNew();
+        double scale = Win32.MonitorScale(TargetMonitor());
+        // Os ícones dos atalhos dependem da escala: em outra escala, painel novo.
+        if (_groupWindow is not null && _groupIconPixels != GroupIconPixels(scale)) DiscardGroupWindow();
+        var w = _groupWindow ??= CreateGroupWindow(scale);
+        w.Open(group, rect, Config.Edge != "superior", scale);
+        if (rename) w.StartRename();
+        // Medido quando a fila de interface esvazia, isto é, com o painel já desenhado.
+        _host.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () =>
+            Log.Info($"Grupo '{group.Name}' aberto em {watch.ElapsedMilliseconds} ms ({group.Items?.Count ?? 0} atalho(s))"));
+    }
+
+    private GroupWindow CreateGroupWindow(double scale)
+    {
+        int px = _groupIconPixels = GroupIconPixels(scale);
+        var w = new GroupWindow(_host.Themes, item =>
         {
             var (_, name, icon) = Resolve(item);
             return (name, icon is null ? null : _icons.Get(icon, px));
         });
         w.Launch += item => LaunchItem(item, null, Resolve(item).Item2);
-        w.RemoveItem += item => { Core.Config.DockGroups.Remove(Config.Items, group, item, toDock: false); Changed(); };
-        w.MoveToDock += item => { Core.Config.DockGroups.Remove(Config.Items, group, item, toDock: true); Changed(); };
-        w.FilesAdded += files => { AddFilesToGroup(group, files); };
-        w.Renamed += name => { group.Name = name; _resolved.Remove(group); Changed(); };
-        w.AddRequested += () => AddToGroupWithDialog(group);
-        w.Closed += (_, _) =>
+        w.RemoveItem += item => { Core.Config.DockGroups.Remove(Config.Items, w.Group, item, toDock: false); Changed(); };
+        w.MoveToDock += item => { Core.Config.DockGroups.Remove(Config.Items, w.Group, item, toDock: true); Changed(); };
+        w.FilesAdded += files => AddFilesToGroup(w.Group, files);
+        w.Renamed += name => { w.Group.Name = name; _resolved.Remove(w.Group); Changed(); };
+        w.AddRequested += () => AddToGroupWithDialog(w.Group);
+        w.Closed += (_, _) => { if (ReferenceEquals(_groupWindow, w)) _groupWindow = null; };
+        return w;
+    }
+
+    /// <summary>Fecha de vez o painel dos grupos (tema, ícones ou o dock mudaram). O próximo é criado ao abrir.</summary>
+    private void DiscardGroupWindow()
+    {
+        var w = _groupWindow;
+        _groupWindow = null;
+        w?.Close();
+    }
+
+    /// <summary>Tamanho dos ícones no painel do grupo (40 DIPs na tela), em pixels físicos.</summary>
+    private static int GroupIconPixels(double scale)
+    {
+        foreach (int size in new[] { 32, 48, 64, 96, 128, 256 })
+            if (size >= 40 * scale) return size;
+        return 256;
+    }
+
+    /// <summary>
+    /// Carrega, com o app ocioso, os ícones dos atalhos dentro dos grupos: abrir um grupo não precisa
+    /// mais ler o disco nem pedir ícones ao shell (lento e que carrega DLLs no processo).
+    /// </summary>
+    private void PreloadGroupIcons()
+    {
+        if (_groupIconsQueued) return;
+        _groupIconsQueued = true;
+        _host.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.SystemIdle, () =>
         {
-            if (ReferenceEquals(_groupWindow, w)) { _groupWindow = null; _openGroup = null; }
-            _host.Trimmer.Schedule(TimeSpan.FromSeconds(3));
-        };
-        _groupWindow = w;
-        _openGroup = group;
-        w.ShowNear(rect, Config.Edge != "superior", Win32.MonitorScale(TargetMonitor()));
-        if (rename) w.StartRename();
+            _groupIconsQueued = false;
+            if (_window is null) return;
+            try
+            {
+                int px = GroupIconPixels(Win32.MonitorScale(TargetMonitor()));
+                foreach (var g in Core.Config.DockGroups.Groups(Config.Items))
+                    foreach (var item in g.Items ?? [])
+                        if (Resolve(item).Item3 is { } icon) _icons.Get(icon, px);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Não foi possível pré-carregar os ícones dos grupos: {ex.Message}");
+            }
+        });
     }
 
     private void AddFilesToGroup(Core.Config.DockItem group, string[] files)

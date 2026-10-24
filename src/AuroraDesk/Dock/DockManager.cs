@@ -107,6 +107,7 @@ internal sealed partial class DockManager : IDisposable
         if (_window is null) return;
         _hideTimer.Stop();
         if (_running is not null) _running.Changed -= Rebuild;
+        DiscardGroupWindow();
         CloseIslands();
         Win32.InputAnchor = 0;
         _window.Close(); // devolve o espaço da AppBar
@@ -200,6 +201,7 @@ internal sealed partial class DockManager : IDisposable
 
         _entries = entries;
         _window.Surface.SetEntries(entries);
+        PreloadGroupIcons();
 
         // Só reposiciona a janela quando o comprimento muda.
         string key = $"{entries.Count}|{entries.Count(e => e.IsSeparator)}|{Config.Edge}|{Config.IconSize}|{Config.Monitor}|{Reserve}";
@@ -420,6 +422,7 @@ internal sealed partial class DockManager : IDisposable
         ApplySurfaceSettings();
         _layoutKey = "";
         _icons.Clear();
+        DiscardGroupWindow();
         Rebuild();
         ShowIslands(); // itens, borda ou estilo podem ter mudado
         if (AutoHideActive) { _hideTimer.Stop(); _hideTimer.Start(); }
@@ -427,6 +430,7 @@ internal sealed partial class DockManager : IDisposable
 
     private void OnThemeChanged()
     {
+        DiscardGroupWindow(); // cores do painel são do tema
         _window?.ApplyBackdrop(_host.Themes.Current.Panel);
         _window?.Surface.InvalidateVisual();
         foreach (var w in new[] { _leftIsland, _rightIsland })
